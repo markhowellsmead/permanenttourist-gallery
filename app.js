@@ -151,6 +151,67 @@ function getGridMetrics(item, targetHeight) {
     };
 }
 
+const SHOW_CAPTIONS_STORAGE_KEY = "gallery.showCaptions";
+
+function setShowCaptionsEnabled(enabled) {
+    document.body.classList.toggle("show-captions", enabled);
+}
+
+function createCaptionSettingsPanel() {
+    const status = document.getElementById("status");
+    if (!status || !status.parentNode) {
+        return null;
+    }
+
+    const panel = document.createElement("div");
+    panel.id = "settings-panel";
+    panel.setAttribute("aria-label", "Gallery settings");
+
+    const label = document.createElement("label");
+    label.setAttribute("for", "show-captions-checkbox");
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.id = "show-captions-checkbox";
+
+    label.appendChild(checkbox);
+    label.appendChild(document.createTextNode(" Keep image captions visible"));
+    panel.appendChild(label);
+
+    status.parentNode.insertBefore(panel, status);
+
+    return checkbox;
+}
+
+function initCaptionSettings() {
+    const checkbox = createCaptionSettingsPanel();
+    if (!(checkbox instanceof HTMLInputElement)) {
+        return;
+    }
+
+    let enabled = false;
+    try {
+        enabled = localStorage.getItem(SHOW_CAPTIONS_STORAGE_KEY) === "1";
+    } catch (_error) {
+        enabled = false;
+    }
+
+    checkbox.checked = enabled;
+    setShowCaptionsEnabled(enabled);
+
+    checkbox.addEventListener("change", () => {
+        const isEnabled = checkbox.checked;
+        setShowCaptionsEnabled(isEnabled);
+
+        try {
+            localStorage.setItem(
+                SHOW_CAPTIONS_STORAGE_KEY,
+                isEnabled ? "1" : "0",
+            );
+        } catch (_error) {}
+    });
+}
+
 function renderImages(images) {
     const list = document.getElementById("image-list");
     list.innerHTML = "";
@@ -250,4 +311,5 @@ async function run() {
     }
 }
 
+initCaptionSettings();
 run();

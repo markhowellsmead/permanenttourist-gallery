@@ -125,6 +125,16 @@ Rendered overlay content per image:
 - comma-separated tags from `iptc.keywords.value`
 - formatted capture date/time
 
+### Settings panel
+
+The settings panel is created dynamically in JavaScript (not server-rendered in PHP).
+
+- A `Show captions` checkbox is inserted into the DOM by `app.js`
+- Captions are hidden by default in CSS
+- Captions appear on image hover/focus with a transition
+- If `Show captions` is enabled, captions remain visible without hover
+- Checkbox state is persisted in `localStorage` using the key `gallery.showCaptions`
+
 ## Output data format
 
 `media/media.json` is an array of image records:

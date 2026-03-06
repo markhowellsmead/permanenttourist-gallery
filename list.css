@@ -22,6 +22,18 @@ h1 {
     color: #444;
 }
 
+#settings-panel {
+    margin-bottom: 1rem;
+}
+
+#settings-panel label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #444;
+}
+
 #image-list {
     list-style: none;
     padding: 0;
@@ -105,6 +117,19 @@ h1 {
     padding: 0.6rem;
     color: #fff;
     background: linear-gradient(0deg, rgba(0, 0, 0, 0.75), transparent);
+    opacity: 0;
+    transform: translateY(0.3rem);
+    transition:
+        opacity 220ms ease,
+        transform 220ms ease;
+    pointer-events: none;
+}
+
+.c-grid500__itemlink:hover .meta,
+.c-grid500__itemlink:focus-within .meta,
+body.show-captions .meta {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .meta .title {
