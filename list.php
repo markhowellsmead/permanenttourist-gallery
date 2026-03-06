@@ -26,6 +26,7 @@ $appJsUrl = AssetHelper::cacheBustedAsset('app.js', true);
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Permanent Tourist photographic archive</title>
 	<link rel="stylesheet" href="<?php echo htmlspecialchars($listCssUrl, ENT_QUOTES, 'UTF-8'); ?>">
+	<link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml">
 </head>
 
 <body>
