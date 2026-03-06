@@ -113,7 +113,7 @@ async function run() {
     const status = document.getElementById("status");
 
     try {
-        const response = await fetch("api", {
+        const response = await fetch("/api", {
             method: "GET",
         });
         if (!response.ok) {
