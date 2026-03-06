@@ -1,45 +1,180 @@
-# Gallery media metadata builder
+# Gallery media metadata builder and viewer
 
-This project uses [build.php](build.php) to scan JPEG files in [media/](media/) and generate [media/media.json](media/media.json).
+This project scans JPEG images in `media/`, extracts IPTC and EXIF metadata, writes a JSON index, and serves a browser-based gallery view that loads data from a REST-style API.
 
-## Build command
+## Overview
 
-Run:
+Main parts:
+
+- `build.php`: scans images and generates `media/media.json`
+- `api.php`: GET-only JSON endpoint returning lowercased-key data
+- `index.php`: front controller for dynamic routes (`/api`, `/build`) and default list page
+- `list.php`: HTML shell for the list/grid UI with cache-busted assets
+- `app.js`: client-side data fetch, sorting, metadata extraction, and grid rendering
+- `list.css`: grid/layout styling
+- `.htaccess`: rewrites non-JPG, non-CSS, non-JS requests to `index.php`
+
+## Requirements
+
+- PHP 8+ recommended
+- EXIF extension enabled for EXIF extraction (`exif_read_data`)
+- IPTC parsing support (`getimagesize` + `iptcparse`)
+- Apache with `mod_rewrite` for the provided `.htaccess` behavior
+
+## Build process
+
+Generate metadata JSON with:
 
 ```bash
 php build.php
 ```
 
-## Output format
+What `build.php` does:
 
-The output file [media/media.json](media/media.json) is a JSON array of image objects.
+1. Recursively scans `media/` for `.jpg` and `.jpeg`
+2. Builds each image URL as `/media/<relative-path>`
+3. Extracts IPTC and EXIF metadata
+4. Normalizes metadata values for safe UTF-8 JSON output
+5. Sorts records by URL
+6. Writes `media/media.json`
 
-Each image object has:
+## IPTC transformation details
 
-- `url`: Web path to the image (for example `/media/example.jpg`)
-- `iptc`: IPTC metadata object
-- `exif`: EXIF metadata object
-
-### IPTC structure
-
-`iptc` is keyed by a legible IPTC field name (ASCII snake_case derived from IPTC Photo Metadata labels), for example `country_primary_location_name`.
-
-Each IPTC field contains:
-
-- `iptc_key`: Original IPTC tag key (for example `2#101`)
-- `value`: The IPTC value(s), kept as an array
+Raw IPTC tags like `2#101` are transformed into legible keys based on the IPTC Photo Metadata/IIM label map.
 
 Example:
 
+- key: `country_primary_location_name`
+- payload:
+
 ```json
 {
-  "country_primary_location_name": {
-    "iptc_key": "2#101",
-    "value": ["Austria"]
-  }
+  "iptc_key": "2#101",
+  "value": ["Austria"]
 }
 ```
 
-### EXIF structure
+Notes:
 
-`exif` contains the nested sections returned by PHP `exif_read_data`, such as `FILE`, `COMPUTED`, `IFD0`, `EXIF`, and `GPS` when present.
+- Keys are ASCII snake_case
+- Diacritics/special characters are transliterated where possible
+- Unknown tags fall back to their raw code-derived key
+- `value` remains an array
+
+## API behavior
+
+Endpoint:
+
+- `GET /api` (and `GET /api/` via route normalization)
+
+Rules:
+
+- Only `GET` is allowed
+- Non-GET requests return HTTP `405` with `Allow: GET`
+- Reads `media/media.json`
+- Recursively lowercases all associative object keys before output
+
+Possible error responses:
+
+- `404` when media JSON is missing/unreadable
+- `500` when read/parsing fails
+
+## Routing behavior
+
+`.htaccess` rewrites requests as follows:
+
+- `.jpg/.jpeg`, `.css`, and `.js` are served directly
+- all other requests are routed to `index.php`
+
+`index.php` then dispatches:
+
+- `/api` and `/api/` → `api.php`
+- `/build` and `/build/` → `build.php`
+- any other dynamic path → `list.php`
+
+## Frontend list/grid behavior
+
+`list.php` includes versioned assets using file modification timestamps:
+
+- `list.css?v=<filemtime>`
+- `app.js?v=<filemtime>`
+
+`app.js` behavior:
+
+1. Fetches `/api`
+2. Computes capture timestamp using EXIF fields first:
+   - `exif.exif.datetimeoriginal`
+   - `exif.exif.datetimedigitized`
+   - fallback: `exif.ifd0.datetime`
+3. Falls back to IPTC date/time when needed:
+   - `iptc.date_created.value[0]`
+   - `iptc.time_created.value[0]`
+4. Sorts images newest first
+5. Renders a flex-based calculated grid inspired by grid500 logic using:
+   - width: `exif.computed.width`
+   - height: `exif.computed.height`
+   - metrics:
+     - `flexGrow = width * 100 / height`
+     - `flexBasis = width * targetHeight / height`
+     - `paddingBottom = height / width * 100`
+
+Rendered overlay content per image:
+
+- title from `iptc.object_name.value[0]`, fallback `Untitled`
+- location from IPTC location fields
+- comma-separated tags from `iptc.keywords.value`
+- formatted capture date/time
+
+## Output data format
+
+`media/media.json` is an array of image records:
+
+- `url`: web path to image
+- `iptc`: transformed IPTC object
+- `exif`: EXIF sections (for example `FILE`, `COMPUTED`, `IFD0`, `EXIF`, `GPS`)
+
+## Quick test checklist
+
+Use this checklist after deployment or server config changes.
+
+1. Rebuild metadata index:
+
+```bash
+php build.php
+```
+
+Expected: command succeeds and updates `media/media.json`.
+
+2. Verify API returns JSON:
+
+- Open `/api` in the browser
+- Confirm HTTP 200 and JSON array response
+
+3. Verify method restriction:
+
+- Send a non-GET request to `/api`
+- Confirm HTTP 405 and `Allow: GET`
+
+4. Verify gallery UI:
+
+- Open `/`
+- Confirm status text reports loaded images
+- Confirm images are shown in a calculated grid and sorted newest first
+
+5. Verify static assets are direct-served:
+
+- Open `/list.css` and `/app.js`
+- Confirm both are served directly (not routed JSON/HTML output)
+
+6. Verify front-controller routes:
+
+- Open `/build` to trigger rebuild endpoint
+- Open an unknown dynamic path (for example `/something-random`) and confirm list view fallback
+
+## License
+
+This project is licensed under the GNU General Public License v2.0 (GPL-2.0).
+
+## Author
+
+Mark Howells-Mead, [Say Hello GmbH](https://sayhello.ch/).
