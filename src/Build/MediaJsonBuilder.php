@@ -49,7 +49,7 @@ final class MediaJsonBuilder
 	 * @param string $mediaDir    Path to media directory
 	 * @param string $outputFile  Path to output JSON file
 	 *
-	 * @return array Associative array with 'total' and 'new' image counts
+	 * @return array{total: int, new: int} Associative array with 'total' and 'new' image counts
 	 * @throws \RuntimeException If media directory not found or write fails
 	 */
 	public function buildWithDetails(string $mediaDir, string $outputFile): array
@@ -123,6 +123,13 @@ final class MediaJsonBuilder
 		];
 	}
 
+	/**
+	 * Get list of image URLs from existing JSON file
+	 *
+	 * @param string $outputFile Path to existing media.json file
+	 *
+	 * @return array<int, string> Array of URL strings
+	 */
 	private function getExistingUrls(string $outputFile): array
 	{
 		if (!file_exists($outputFile)) {
@@ -130,17 +137,6 @@ final class MediaJsonBuilder
 		}
 
 		$content = @file_get_contents($outputFile);
-		/**
-		 * Log newly added images to monthly log file
-		 *
-		 * Creates logs directory if needed and appends timestamped entries
-		 * for each new image URL to YYYY-MM.log file.
-		 *
-		 * @param array  $newUrls   Array of new image URLs
-		 * @param string $mediaDir  Path to media directory
-		 *
-		 * @return void
-		 */
 		if ($content === false) {
 			return [];
 		}
@@ -152,16 +148,6 @@ final class MediaJsonBuilder
 
 		$urls = [];
 		foreach ($data as $item) {
-			/**
-			 * Recursively normalize values for safe UTF-8 JSON encoding
-			 *
-			 * Converts arrays, objects, and strings to valid UTF-8,
-			 * stripping invalid characters as needed.
-			 *
-			 * @param mixed $value Value to normalize
-			 *
-			 * @return mixed Normalized value
-			 */
 			if (isset($item['url']) && is_string($item['url'])) {
 				$urls[] = $item['url'];
 			}
@@ -170,6 +156,17 @@ final class MediaJsonBuilder
 		return $urls;
 	}
 
+	/**
+	 * Log newly added images to monthly log file
+	 *
+	 * Creates logs directory if needed and appends timestamped entries
+	 * for each new image URL to YYYY-MM.log file.
+	 *
+	 * @param array<int, string> $newUrls   Array of new image URLs
+	 * @param string             $mediaDir  Path to media directory
+	 *
+	 * @return void
+	 */
 	private function logNewImages(array $newUrls, string $mediaDir): void
 	{
 		$logsDir = dirname($mediaDir) . '/logs';
@@ -192,20 +189,20 @@ final class MediaJsonBuilder
 		@file_put_contents($logFile, $logContent, FILE_APPEND | LOCK_EX);
 	}
 
-	private function normalizeValue($value)
+	/**
+	 * Recursively normalize values for safe UTF-8 JSON encoding
+	 *
+	 * Converts arrays, objects, and strings to valid UTF-8,
+	 * stripping invalid characters as needed.
+	 *
+	 * @param mixed $value Value to normalize
+	 *
+	 * @return mixed Normalized value
+	 */
+	private function normalizeValue(mixed $value): mixed
 	{
 		if (is_array($value)) {
 			$normalized = [];
-			/**
-			 * Convert IPTC label to legible snake_case key
-			 *
-			 * Transliterates special characters, converts to lowercase,
-			 * and replaces non-alphanumeric characters with underscores.
-			 *
-			 * @param string $label IPTC label to convert
-			 *
-			 * @return string Snake_case key
-			 */
 			foreach ($value as $key => $item) {
 				$normalized[$key] = $this->normalizeValue($item);
 			}
@@ -214,16 +211,6 @@ final class MediaJsonBuilder
 
 		if (is_object($value)) {
 			return $this->normalizeValue((array) $value);
-			/**
-			 * Get human-readable label for IPTC tag key
-			 *
-			 * Maps IPTC codes (e.g., '2#101') to descriptive labels based on
-			 * IPTC Photo Metadata/IIM specification.
-			 *
-			 * @param string $iptcKey IPTC tag key (e.g., '2#101')
-			 *
-			 * @return string Human-readable label or original key if unknown
-			 */
 		}
 
 		if (is_string($value)) {
@@ -366,6 +353,16 @@ final class MediaJsonBuilder
 		return $labels[$iptcKey] ?? $iptcKey;
 	}
 
+	/**
+	 * Restructure raw IPTC data into legible format
+	 *
+	 * Converts IPTC tag codes to readable keys and wraps values
+	 * with original tag reference.
+	 *
+	 * @param array<string, mixed> $parsed Raw IPTC data from iptcparse()
+	 *
+	 * @return array<string, array{iptc_key: string, value: mixed}> Restructured IPTC data with readable keys
+	 */
 	private function restructureIptcData(array $parsed): array
 	{
 		$structured = [];
@@ -388,6 +385,15 @@ final class MediaJsonBuilder
 		return $structured;
 	}
 
+	/**
+	 * Extract IPTC metadata from image file
+	 *
+	 * Reads APP13 segment from JPEG and parses IPTC data.
+	 *
+	 * @param string $filePath Path to image file
+	 *
+	 * @return array<string, array{iptc_key: string, value: mixed}> Structured IPTC data or empty array if none found
+	 */
 	private function getIptcData(string $filePath): array
 	{
 		$info = [];
@@ -405,6 +411,15 @@ final class MediaJsonBuilder
 		return $this->restructureIptcData($parsed);
 	}
 
+	/**
+	 * Extract EXIF metadata from image file
+	 *
+	 * Reads all EXIF sections using exif_read_data() if available.
+	 *
+	 * @param string $filePath Path to image file
+	 *
+	 * @return array<string, mixed> Normalized EXIF data or empty array if unavailable
+	 */
 	private function getExifData(string $filePath): array
 	{
 		if (!function_exists('exif_read_data')) {

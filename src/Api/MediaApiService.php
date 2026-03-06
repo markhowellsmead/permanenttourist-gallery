@@ -24,9 +24,9 @@ final class MediaApiService
 	 * Validates request method, reads media JSON file, applies filters,
 	 * and returns JSON response with lowercased keys.
 	 *
-	 * @param string $requestMethod Request HTTP method (only GET allowed)
-	 * @param array  $queryParams   Query parameters for filtering
-	 * @param string $jsonFile      Path to media.json file
+	 * @param string               $requestMethod Request HTTP method (only GET allowed)
+	 * @param array<string, mixed> $queryParams   Query parameters for filtering
+	 * @param string               $jsonFile      Path to media.json file
 	 *
 	 * @return void
 	 */
@@ -137,9 +137,9 @@ final class MediaApiService
 	/**
 	 * Send JSON response with HTTP status code and optional headers
 	 *
-	 * @param int   $statusCode HTTP status code
-	 * @param array $payload    Data to encode as JSON
-	 * @param array $headers    Additional HTTP headers (default: [])
+	 * @param int                  $statusCode HTTP status code
+	 * @param array<string, mixed> $payload    Data to encode as JSON
+	 * @param array<int, string>   $headers    Additional HTTP headers (default: [])
 	 *
 	 * @return void
 	 */
@@ -199,15 +199,6 @@ final class MediaApiService
 		}
 
 		$exifCandidates = [
-			/**
-			 * Recursively lowercase all associative array keys
-			 *
-			 * Preserves numeric array indices but lowercases string keys.
-			 *
-			 * @param mixed $value Value to process (array, string, etc.)
-			 *
-			 * @return mixed Value with lowercased keys if array
-			 */
 			$item['exif']['EXIF']['DateTimeOriginal'] ?? null,
 			$item['exif']['EXIF']['DateTimeDigitized'] ?? null,
 			$item['exif']['IFD0']['DateTime'] ?? null,
@@ -232,7 +223,16 @@ final class MediaApiService
 		return null;
 	}
 
-	private function lowercaseKeysRecursive($value)
+	/**
+	 * Recursively lowercase all associative array keys
+	 *
+	 * Preserves numeric array indices but lowercases string keys.
+	 *
+	 * @param mixed $value Value to process (array, string, etc.)
+	 *
+	 * @return mixed Value with lowercased keys if array
+	 */
+	private function lowercaseKeysRecursive(mixed $value): mixed
 	{
 		if (!is_array($value)) {
 			return $value;

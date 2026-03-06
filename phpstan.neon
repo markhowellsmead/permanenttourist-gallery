@@ -1,0 +1,14 @@
+parameters:
+	level: 8
+	paths:
+		- src
+		- api.php
+		- build.php
+		- functions.php
+		- index.php
+		- list.php
+		- 404.php
+	phpVersion: 80418
+	excludePaths:
+		- vendor
+	reportUnmatchedIgnoredErrors: false

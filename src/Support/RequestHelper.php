@@ -21,16 +21,14 @@ final class RequestHelper
 	/**
 	 * Private constructor prevents direct instantiation
 	 */
-	private function __construct()
-	{
-	}
+	private function __construct() {}
 
 	/**
 	 * Extract and normalize the request path from server variables
 	 *
 	 * Parses REQUEST_URI, strips script directory prefix, and normalizes path.
 	 *
-	 * @param array $server Server variables (typically $_SERVER)
+	 * @param array<string, mixed> $server Server variables (typically $_SERVER)
 	 *
 	 * @return string Normalized request path starting with '/'
 	 */
@@ -48,7 +46,6 @@ final class RequestHelper
 			$path = substr($path, strlen($scriptDir));
 		}
 
-		$path = '/' . ltrim($path, '/');
-		return $path === '' ? '/' : $path;
+		return '/' . ltrim($path, '/');
 	}
 }

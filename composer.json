@@ -1,0 +1,27 @@
+{
+	"name": "pt/gallery",
+	"description": "Gallery media metadata builder and viewer",
+	"type": "project",
+	"license": "GPL-2.0-only",
+	"authors": [
+		{
+			"name": "Mark Howells-Mead",
+			"email": "mark@sayhello.ch"
+		}
+	],
+	"require": {
+		"php": "^8.0"
+	},
+	"require-dev": {
+		"phpstan/phpstan": "^1.10"
+	},
+	"autoload": {
+		"psr-4": {
+			"PT\\Gallery\\": "src/"
+		}
+	},
+	"config": {
+		"sort-packages": true,
+		"optimize-autoloader": true
+	}
+}

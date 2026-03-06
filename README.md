@@ -194,6 +194,50 @@ The settings panel is created dynamically in JavaScript (not server-rendered in 
 - `iptc`: transformed IPTC object
 - `exif`: EXIF sections (for example `FILE`, `COMPUTED`, `IFD0`, `EXIF`, `GPS`)
 
+## Development
+
+### Dependencies
+
+Install development dependencies using Composer:
+
+```bash
+composer install
+```
+
+This installs:
+- **PHPStan**: Static analysis tool for PHP code quality and compatibility checking
+
+### Code Quality
+
+#### PHPStan Analysis
+
+Run PHPStan to check for PHP 8.4.18 compatibility and type safety:
+
+```bash
+./vendor/bin/phpstan analyze
+```
+
+The project is configured with:
+- **Level 8**: Strictest analysis level
+- **PHP 8.4.18 compatibility**: Ensures code works with PHP 8.4.18 (`phpVersion: 80418`)
+- **Type annotations**: All methods include proper PHPDoc type hints
+
+Configuration: `phpstan.neon`
+
+#### Code Formatting
+
+Format PHP code according to PSR-2 standards:
+
+```bash
+phpcbf --standard=phpcs.xml .
+```
+
+Check for coding standard violations:
+
+```bash
+phpcs --standard=phpcs.xml .
+```
+
 ## Quick test checklist
 
 Use this checklist after deployment or server config changes.
