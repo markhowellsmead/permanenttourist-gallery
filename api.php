@@ -45,6 +45,48 @@ if (!is_array($data)) {
     exit;
 }
 
+/**
+ * @param mixed $value
+ */
+function getStringValue($value): ?string
+{
+    return is_string($value) && trim($value) !== '' ? trim($value) : null;
+}
+
+/**
+ * @param mixed $item
+ */
+function getCaptureMonthYear($item): ?string
+{
+    if (!is_array($item)) {
+        return null;
+    }
+
+    $exifCandidates = [
+        $item['exif']['EXIF']['DateTimeOriginal'] ?? null,
+        $item['exif']['EXIF']['DateTimeDigitized'] ?? null,
+        $item['exif']['IFD0']['DateTime'] ?? null,
+    ];
+
+    foreach ($exifCandidates as $candidate) {
+        $candidateString = getStringValue($candidate);
+        if ($candidateString === null) {
+            continue;
+        }
+
+        if (preg_match('/^(\d{4}):(\d{2}):\d{2}\s+\d{2}:\d{2}:\d{2}$/', $candidateString, $match) === 1) {
+            return $match[1] . '-' . $match[2];
+        }
+    }
+
+    $iptcDate = getStringValue($item['iptc']['date_created']['value'][0] ?? null);
+    if ($iptcDate !== null && preg_match('/^(\d{4})(\d{2})\d{2}$/', $iptcDate, $match) === 1) {
+        return $match[1] . '-' . $match[2];
+    }
+
+    return null;
+}
+
 $countryFilter = trim((string) ($_GET['country'] ?? ''));
 if ($countryFilter !== '') {
     $data = array_values(array_filter($data, static function ($item) use ($countryFilter): bool {
@@ -80,6 +122,22 @@ if ($countryFilter !== '') {
         }
 
         return false;
+    }));
+}
+
+$monthYearFilter = trim((string) ($_GET['month_year'] ?? ''));
+if ($monthYearFilter !== '') {
+    if (preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $monthYearFilter) !== 1) {
+        http_response_code(400);
+        echo json_encode([
+            'error' => 'invalid_month_year',
+            'message' => 'month_year must be in yyyy-mm format.',
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $data = array_values(array_filter($data, static function ($item) use ($monthYearFilter): bool {
+        return getCaptureMonthYear($item) === $monthYearFilter;
     }));
 }
 
