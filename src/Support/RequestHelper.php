@@ -21,7 +21,9 @@ final class RequestHelper
 	/**
 	 * Private constructor prevents direct instantiation
 	 */
-	private function __construct() {}
+	private function __construct()
+	{
+	}
 
 	/**
 	 * Extract and normalize the request path from server variables

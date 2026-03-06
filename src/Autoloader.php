@@ -21,7 +21,9 @@ final class Autoloader
 	/**
 	 * Private constructor prevents direct instantiation
 	 */
-	private function __construct() {}
+	private function __construct()
+	{
+	}
 
 	/**
 	 * Register the autoloader for the PT\Gallery namespace

@@ -10,7 +10,7 @@ Main parts:
 - `api.php`: GET-only JSON endpoint returning flattened data structure
 - `index.php`: front controller for dynamic routes (`/api`, `/build`) and default list page
 - `list.php`: HTML shell for the list/grid UI with cache-busted assets
-- `functions.php`: bootstrap file which registers autoloading for namespaced classes
+- `functions.php`: bootstrap file which registers autoloading for namespaced classes and loads `.env` file
 - `app.js`: client-side data fetch, sorting, metadata extraction, and grid rendering
 - `list.css`: grid/layout styling
 - `404.css`: styling for the custom 404 page
@@ -162,13 +162,13 @@ The `/update` endpoint provides a way to pull the latest code from the git repos
 
 **Configuration:**
 
-Set the `UPDATE_TOKEN` environment variable:
+Set the `UPDATE_TOKEN` in your `.env` file:
 
-```bash
-export UPDATE_TOKEN="your_secure_random_token"
+```dotenv
+UPDATE_TOKEN=your_secure_random_token
 ```
 
-Or configure it in your web server environment. See `.env.example` for a reference configuration.
+Or set it as an environment variable in your web server configuration. See `.env.example` for a reference configuration.
 
 Generate a secure token:
 
@@ -330,10 +330,18 @@ This installs:
 
 ### Environment Configuration
 
-Configure environment variables for optional features:
+The application automatically loads environment variables from a `.env` file in the project root. This file is loaded by `functions.php` on every request using a built-in parser.
+
+Configure environment variables:
 
 ```bash
 cp .env.example .env
+```
+
+Edit `.env` and set your values:
+
+```dotenv
+UPDATE_TOKEN=your_secure_random_token_here
 ```
 
 Available environment variables:
@@ -346,7 +354,9 @@ Generate a secure token:
 openssl rand -hex 32
 ```
 
-Set environment variables in your server configuration (Apache, nginx) or use a `.env` file with a library like `vlucas/phpdotenv` if needed.
+**Note:** The `.env` file should not be committed to version control (it's in `.gitignore`). Use `.env.example` as a template for required variables.
+
+**Alternative:** You can also set environment variables directly in your server configuration (Apache, nginx) instead of using a `.env` file.
 
 ### Code Quality
 

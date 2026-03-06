@@ -21,3 +21,6 @@ if (realpath((string) ($_SERVER['SCRIPT_FILENAME'] ?? '')) === __FILE__) {
 require_once __DIR__ . '/src/Autoloader.php';
 
 \PT\Gallery\Autoloader::register(__DIR__ . '/src');
+
+// Load .env file if it exists
+\PT\Gallery\Support\EnvLoader::load(__DIR__ . '/.env');
