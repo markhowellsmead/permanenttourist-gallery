@@ -89,22 +89,22 @@ $githubToken = getenv('GITHUB_TOKEN');
 if ($githubToken !== false && $githubToken !== '') {
 	// Get current remote URL
 	exec('git remote get-url origin 2>&1', $remoteOutput, $remoteExitCode);
-	
+
 	if ($remoteExitCode === 0 && !empty($remoteOutput)) {
 		$remoteUrl = trim($remoteOutput[0]);
-		
+
 		// Check if remote is using SSH
 		if (preg_match('/^git@github\.com:(.+)\.git$/', $remoteUrl, $matches)) {
 			$repoPath = $matches[1];
 			$httpsUrl = "https://{$githubToken}@github.com/{$repoPath}.git";
-			
+
 			// Temporarily set remote to HTTPS with token
 			exec("git remote set-url origin '{$httpsUrl}' 2>&1", $setUrlOutput, $setUrlExitCode);
-			
+
 			if ($setUrlExitCode === 0) {
 				// Execute git pull with HTTPS
 				exec('git pull origin 2>&1', $output, $exitCode);
-				
+
 				// Restore SSH remote URL
 				exec("git remote set-url origin '{$remoteUrl}' 2>&1");
 			} else {
