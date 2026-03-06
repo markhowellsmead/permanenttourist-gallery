@@ -7,9 +7,15 @@ RewriteCond %{REQUEST_URI} ^/media/ [NC]
 RewriteCond %{REQUEST_URI} !\.(?:jpe?g|png|gif|webp|avif|svg)$ [NC]
 RewriteRule ^media/ / [R=302,L]
 
-# Rewrite all non-JPG requests to index.php
-RewriteCond %{REQUEST_URI} !\.jpe?g$ [NC]
-RewriteCond %{REQUEST_URI} !\.css$ [NC]
-RewriteCond %{REQUEST_URI} !\.js$ [NC]
-RewriteCond %{REQUEST_URI} !/index\.php$ [NC]
-RewriteRule ^ index.php [L,QSA]
+# Serve existing files and directories directly
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Allow only these application routes
+RewriteRule ^$ index.php [L,QSA]
+RewriteRule ^api/?$ index.php [L,QSA]
+RewriteRule ^build/?$ index.php [L,QSA]
+
+# Everything else should render the custom 404 page
+RewriteRule ^ 404.php [L]

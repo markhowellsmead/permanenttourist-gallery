@@ -34,4 +34,9 @@ if ($path === '/build') {
     exit;
 }
 
-require __DIR__ . '/list.php';
+if ($path === '/') {
+    require __DIR__ . '/list.php';
+    exit;
+}
+
+require __DIR__ . '/404.php';
