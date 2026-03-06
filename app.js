@@ -1,5 +1,3 @@
-console.log('✅ Gallery app loaded.');
-
 const LOCALE = 'en-GB';
 
 function parseExifDateTime(value) {
