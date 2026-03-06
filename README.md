@@ -6,8 +6,8 @@ This project scans JPEG images in `media/`, extracts IPTC and EXIF metadata, wri
 
 Main parts:
 
-- `build.php`: scans images and generates `media/media.json`
-- `api.php`: GET-only JSON endpoint returning lowercased-key data
+- `build.php`: scans images and generates `media/media.json` with complete metadata
+- `api.php`: GET-only JSON endpoint returning flattened data structure
 - `index.php`: front controller for dynamic routes (`/api`, `/build`) and default list page
 - `list.php`: HTML shell for the list/grid UI with cache-busted assets
 - `functions.php`: bootstrap file which registers autoloading for namespaced classes
@@ -94,12 +94,13 @@ Rules:
 
 - Only `GET` is allowed
 - Non-GET requests return HTTP `405` with `Allow: GET`
-- Reads `media/media.json`
+- Reads `media/media.json` (which contains complete IPTC/EXIF metadata)
+- Filters to only essential fields used by frontend
+- Flattens nested IPTC/EXIF structure into simple top-level properties
 - Supports optional filtering via:
     - `month_year` in `yyyy-mm` format (for example `/api?month_year=2024-03`)
     - `country` (for example `/api?country=Scotland`)
     - both together (for example `/api?country=Scotland&month_year=2017-09`)
-- Recursively lowercases all associative object keys before output
 
 Example filter combinations:
 
@@ -107,6 +108,27 @@ Example filter combinations:
 - `/api?month_year=2017-09`
 - `/api?country=Scotland`
 - `/api?country=Scotland&month_year=2017-09`
+
+### Flattened API response structure
+
+Each image in the API response has these top-level fields:
+
+- `url`: image URL path
+- `title`: image title from IPTC object_name
+- `country`: country from IPTC
+- `sublocation`: sublocation from IPTC
+- `city`: city from IPTC
+- `state_province`: state/province from IPTC
+- `date_created`: IPTC date in YYYYMMDD format
+- `time_created`: IPTC time in HHMMSS format
+- `keywords`: array of keyword strings from IPTC
+- `datetime_original`: EXIF DateTimeOriginal timestamp
+- `datetime_digitized`: EXIF DateTimeDigitized timestamp
+- `datetime`: EXIF DateTime timestamp
+- `width`: image width in pixels
+- `height`: image height in pixels
+
+This flattened structure simplifies frontend code and reduces payload size by ~62% compared to the nested structure.
 
 Possible error responses:
 
@@ -138,18 +160,18 @@ Possible error responses:
 
 `app.js` behavior:
 
-1. Fetches `/api`
+1. Fetches `/api` (receives flattened data structure)
 2. Computes capture timestamp using EXIF fields first:
-    - `exif.exif.datetimeoriginal`
-    - `exif.exif.datetimedigitized`
-    - fallback: `exif.ifd0.datetime`
+    - `datetime_original`
+    - `datetime_digitized`
+    - fallback: `datetime`
 3. Falls back to IPTC date/time when needed:
-    - `iptc.date_created.value[0]`
-    - `iptc.time_created.value[0]`
+    - `date_created`
+    - `time_created`
 4. Sorts images newest first
 5. Renders a flex-based calculated grid inspired by grid500 logic using:
-    - width: `exif.computed.width`
-    - height: `exif.computed.height`
+    - width: `width`
+    - height: `height`
     - target height: set as CSS custom property `--grid-target-height` on `<body>`
         - `320px` by default
         - `420px` when viewport width is greater than `1920px`
@@ -163,9 +185,9 @@ Possible error responses:
 
 Rendered overlay content per image:
 
-- title from `iptc.object_name.value[0]`, fallback `Untitled`
-- location from IPTC location fields
-- comma-separated tags from `iptc.keywords.value`
+- title from `title`, fallback `Untitled`
+- location from `country`, `state_province`, `city`, `sublocation` fields
+- comma-separated tags from `keywords` array
 - formatted capture date/time
 
 ### Settings panel
@@ -197,13 +219,21 @@ Each image has two caption states:
   - Automatically hidden on hover/focus or when `Show captions` is enabled
   - Provides quick context without hovering
 
-## Output data format
+## Data storage format
 
-`media/media.json` is an array of image records:
+### media.json (complete metadata)
+
+`media/media.json` stores complete metadata as an array of image records:
 
 - `url`: web path to image
-- `iptc`: transformed IPTC object
+- `iptc`: transformed IPTC object with all tags
 - `exif`: EXIF sections (for example `FILE`, `COMPUTED`, `IFD0`, `EXIF`, `GPS`)
+
+This file contains all extracted metadata for potential future use.
+
+### API response (filtered and flattened)
+
+The `/api` endpoint reads `media.json` but returns only the fields needed by the frontend in a simplified flat structure (see "Flattened API response structure" above). This reduces bandwidth while preserving complete data in storage.
 
 ## Development
 

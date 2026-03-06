@@ -1,7 +1,3 @@
-function getByPath(obj, path) {
-	return path.reduce((acc, key) => (acc && Object.prototype.hasOwnProperty.call(acc, key) ? acc[key] : null), obj);
-}
-
 const LOCALE = 'en-GB';
 
 function parseExifDateTime(value) {
@@ -44,23 +40,16 @@ function parseIptcDateTime(dateValue, timeValue) {
 }
 
 function getCaptureTimestamp(item) {
-	const exifCandidates = [
-		['exif', 'exif', 'datetimeoriginal'],
-		['exif', 'exif', 'datetimedigitized'],
-		['exif', 'ifd0', 'datetime'],
-	];
+	const exifCandidates = [item.datetime_original, item.datetime_digitized, item.datetime];
 
-	for (const path of exifCandidates) {
-		const raw = getByPath(item, path);
+	for (const raw of exifCandidates) {
 		const ts = parseExifDateTime(raw);
 		if (ts !== null) {
 			return ts;
 		}
 	}
 
-	const iptcDate = getByPath(item, ['iptc', 'date_created', 'value', 0]);
-	const iptcTime = getByPath(item, ['iptc', 'time_created', 'value', 0]);
-	return parseIptcDateTime(iptcDate, iptcTime);
+	return parseIptcDateTime(item.date_created, item.time_created);
 }
 
 function formatTimestamp(ts) {
@@ -74,25 +63,15 @@ function formatTimestamp(ts) {
 	});
 }
 
-function getFirstIptcValue(item, key) {
-	const value = getByPath(item, ['iptc', key, 'value', 0]);
-	return typeof value === 'string' && value.trim() !== '' ? value.trim() : null;
-}
-
 function getImageTitle(item) {
-	return getFirstIptcValue(item, 'object_name') ?? 'Untitled';
+	return typeof item.title === 'string' && item.title.trim() !== '' ? item.title : 'Untitled';
 }
 
 function getImageLocation(item) {
-	const country = getFirstIptcValue(item, 'country_primary_location_name');
+	const country = item.country;
 	const includeCountry = typeof country === 'string' && country.trim().toLowerCase() !== 'united kingdom';
 
-	const parts = [
-		getFirstIptcValue(item, 'sublocation'),
-		getFirstIptcValue(item, 'city'),
-		getFirstIptcValue(item, 'state_province'),
-		includeCountry ? country : null,
-	].filter(Boolean);
+	const parts = [item.sublocation, item.city, item.state_province, includeCountry ? country : null].filter(Boolean);
 
 	const seen = new Set();
 	const uniqueParts = [];
@@ -115,22 +94,16 @@ function getImageLocation(item) {
 }
 
 function getImageTags(item) {
-	const tags = getByPath(item, ['iptc', 'keywords', 'value']);
-	if (!Array.isArray(tags)) {
+	if (!Array.isArray(item.keywords)) {
 		return '';
 	}
 
-	const cleanTags = tags
-		.filter((tag) => typeof tag === 'string')
-		.map((tag) => tag.trim())
-		.filter((tag) => tag !== '');
-
-	return cleanTags.join(', ');
+	return item.keywords.join(', ');
 }
 
 function getImageDimensions(item) {
-	const width = Number(getByPath(item, ['exif', 'computed', 'width']));
-	const height = Number(getByPath(item, ['exif', 'computed', 'height']));
+	const width = Number(item.width);
+	const height = Number(item.height);
 
 	if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
 		return {
@@ -330,7 +303,7 @@ function initSettingsPanel() {
 }
 
 function getLocationTerms(item) {
-	const country = getFirstIptcValue(item, 'country_primary_location_name');
+	const country = item.country;
 	const terms = [];
 
 	const isUnitedKingdom = typeof country === 'string' && country.trim().toLowerCase() === 'united kingdom';
@@ -340,9 +313,7 @@ function getLocationTerms(item) {
 	}
 
 	if (isUnitedKingdom) {
-		const regionalTerms = [getFirstIptcValue(item, 'state_province'), getFirstIptcValue(item, 'sublocation')].filter(
-			(term) => typeof term === 'string' && term.trim() !== '',
-		);
+		const regionalTerms = [item.state_province, item.sublocation].filter((term) => typeof term === 'string' && term.trim() !== '');
 
 		for (const term of regionalTerms) {
 			terms.push(term.trim());

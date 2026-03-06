@@ -127,9 +127,9 @@ final class MediaApiService
 			}));
 		}
 
-		$response = $this->lowercaseKeysRecursive($data);
+		$data = $this->flattenImageData($data);
 		echo json_encode(
-			$response,
+			$data,
 			JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
 		);
 	}
@@ -151,6 +151,97 @@ final class MediaApiService
 		}
 
 		echo json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+	}
+
+	/**
+	 * Flatten image data into simplified structure
+	 *
+	 * Extracts nested IPTC/EXIF values into top-level fields for easier frontend access.
+	 *
+	 * @param array<int, mixed> $items Array of image items
+	 *
+	 * @return array<int, array<string, mixed>> Flattened image data
+	 */
+	private function flattenImageData(array $items): array
+	{
+		$flattened = [];
+
+		foreach ($items as $item) {
+			if (!is_array($item)) {
+				continue;
+			}
+
+			$flat = ['url' => $item['url'] ?? ''];
+
+			// Extract IPTC values
+			if (isset($item['iptc']) && is_array($item['iptc'])) {
+				$flat['title'] = $this->extractIptcValue($item['iptc'], 'object_name');
+				$flat['country'] = $this->extractIptcValue($item['iptc'], 'country_primary_location_name');
+				$flat['sublocation'] = $this->extractIptcValue($item['iptc'], 'sublocation');
+				$flat['city'] = $this->extractIptcValue($item['iptc'], 'city');
+				$flat['state_province'] = $this->extractIptcValue($item['iptc'], 'state_province');
+				$flat['date_created'] = $this->extractIptcValue($item['iptc'], 'date_created');
+				$flat['time_created'] = $this->extractIptcValue($item['iptc'], 'time_created');
+
+				// Keywords array (preserve as array)
+				$keywords = $this->extractIptcArray($item['iptc'], 'keywords');
+				if ($keywords !== null) {
+					$flat['keywords'] = $keywords;
+				}
+			}
+
+			// Extract EXIF values
+			if (isset($item['exif']) && is_array($item['exif'])) {
+				$flat['datetime_original'] = $item['exif']['EXIF']['DateTimeOriginal'] ?? null;
+				$flat['datetime_digitized'] = $item['exif']['EXIF']['DateTimeDigitized'] ?? null;
+				$flat['datetime'] = $item['exif']['IFD0']['DateTime'] ?? null;
+				$flat['width'] = $item['exif']['COMPUTED']['Width'] ?? null;
+				$flat['height'] = $item['exif']['COMPUTED']['Height'] ?? null;
+			}
+
+			$flattened[] = $flat;
+		}
+
+		return $flattened;
+	}
+
+	/**
+	 * Extract first value from IPTC field structure
+	 *
+	 * @param array<string, mixed> $iptc IPTC data
+	 * @param string               $key  Field key
+	 *
+	 * @return string|null First value or null if not found
+	 */
+	private function extractIptcValue(array $iptc, string $key): ?string
+	{
+		if (!isset($iptc[$key]['value'][0])) {
+			return null;
+		}
+
+		$value = $iptc[$key]['value'][0];
+		return is_string($value) && trim($value) !== '' ? $value : null;
+	}
+
+	/**
+	 * Extract array of values from IPTC field structure
+	 *
+	 * @param array<string, mixed> $iptc IPTC data
+	 * @param string               $key  Field key
+	 *
+	 * @return array<int, string>|null Array of values or null if not found
+	 */
+	private function extractIptcArray(array $iptc, string $key): ?array
+	{
+		if (!isset($iptc[$key]['value']) || !is_array($iptc[$key]['value'])) {
+			return null;
+		}
+
+		$values = array_filter($iptc[$key]['value'], function ($value): bool {
+			return is_string($value) && trim($value) !== '';
+		});
+
+		return !empty($values) ? array_values($values) : null;
 	}
 
 	/**
@@ -221,33 +312,5 @@ final class MediaApiService
 		}
 
 		return null;
-	}
-
-	/**
-	 * Recursively lowercase all associative array keys
-	 *
-	 * Preserves numeric array indices but lowercases string keys.
-	 *
-	 * @param mixed $value Value to process (array, string, etc.)
-	 *
-	 * @return mixed Value with lowercased keys if array
-	 */
-	private function lowercaseKeysRecursive(mixed $value): mixed
-	{
-		if (!is_array($value)) {
-			return $value;
-		}
-
-		$isList = array_keys($value) === range(0, count($value) - 1);
-		if ($isList) {
-			return array_map(fn($item) => $this->lowercaseKeysRecursive($item), $value);
-		}
-
-		$lowercased = [];
-		foreach ($value as $key => $item) {
-			$lowercased[strtolower((string) $key)] = $this->lowercaseKeysRecursive($item);
-		}
-
-		return $lowercased;
 	}
 }
