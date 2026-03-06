@@ -77,6 +77,46 @@ function formatTimestamp(ts) {
     return new Date(ts).toLocaleString();
 }
 
+function getFirstIptcValue(item, key) {
+    const value = getByPath(item, ["iptc", key, "value", 0]);
+    return typeof value === "string" && value.trim() !== ""
+        ? value.trim()
+        : null;
+}
+
+function getImageTitle(item) {
+    return getFirstIptcValue(item, "object_name") ?? "Untitled";
+}
+
+function getImageLocation(item) {
+    const parts = [
+        getFirstIptcValue(item, "sublocation"),
+        getFirstIptcValue(item, "city"),
+        getFirstIptcValue(item, "state_province"),
+        getFirstIptcValue(item, "country_primary_location_name"),
+    ].filter(Boolean);
+
+    if (parts.length === 0) {
+        return "Unknown location";
+    }
+
+    return parts.join(", ");
+}
+
+function getImageTags(item) {
+    const tags = getByPath(item, ["iptc", "keywords", "value"]);
+    if (!Array.isArray(tags)) {
+        return "";
+    }
+
+    const cleanTags = tags
+        .filter(tag => typeof tag === "string")
+        .map(tag => tag.trim())
+        .filter(tag => tag !== "");
+
+    return cleanTags.join(", ");
+}
+
 function renderImages(images) {
     const list = document.getElementById("image-list");
     list.innerHTML = "";
@@ -93,15 +133,25 @@ function renderImages(images) {
         const meta = document.createElement("div");
         meta.className = "meta";
 
-        const url = document.createElement("div");
-        url.className = "url";
-        url.textContent = item.url;
-
         const date = document.createElement("div");
         date.className = "date";
         date.textContent = formatTimestamp(item.captureTs);
 
-        meta.appendChild(url);
+        const title = document.createElement("div");
+        title.className = "title";
+        title.textContent = getImageTitle(item);
+
+        const location = document.createElement("div");
+        location.className = "location";
+        location.textContent = getImageLocation(item);
+
+        const tags = document.createElement("div");
+        tags.className = "tags";
+        tags.textContent = getImageTags(item);
+
+        meta.appendChild(title);
+        meta.appendChild(location);
+        meta.appendChild(tags);
         meta.appendChild(date);
         li.appendChild(img);
         li.appendChild(meta);
