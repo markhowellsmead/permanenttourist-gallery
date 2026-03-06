@@ -145,16 +145,41 @@ function getImageDimensions(item) {
 	};
 }
 
-function getGridMetrics(item, targetHeight) {
+function getGridMetrics(item) {
 	const dimensions = getImageDimensions(item);
 	const width = dimensions.width;
 	const height = dimensions.height;
+	const ratio = width / height;
 
 	return {
-		flexGrow: (width * 100) / height,
-		flexBasis: (width * targetHeight) / height,
+		ratio,
+		flexGrow: ratio * 100,
 		paddingBottom: (height / width) * 100,
 	};
+}
+
+function getTargetHeight() {
+	if (typeof window !== 'undefined' && window.innerWidth > 1920) {
+		return 420;
+	}
+
+	return 320;
+}
+
+function applyTargetHeightCssVariable() {
+	if (typeof document === 'undefined') {
+		return;
+	}
+
+	document.body.style.setProperty('--grid-target-height', `${getTargetHeight()}px`);
+}
+
+function initResponsiveTargetHeight() {
+	applyTargetHeightCssVariable();
+
+	if (typeof window !== 'undefined') {
+		window.addEventListener('resize', applyTargetHeightCssVariable);
+	}
 }
 
 const SHOW_CAPTIONS_STORAGE_KEY = 'gallery.showCaptions';
@@ -460,15 +485,15 @@ async function fetchImageData(monthYear = '', country = '') {
 function renderImages(images) {
 	const list = document.getElementById('image-list');
 	list.innerHTML = '';
-	const targetHeight = 320;
 
 	for (const item of images) {
 		const li = document.createElement('li');
 		li.className = 'image-item c-grid500__item';
 
-		const metrics = getGridMetrics(item, targetHeight);
+		const metrics = getGridMetrics(item);
 		li.style.flexGrow = String(metrics.flexGrow);
-		li.style.flexBasis = `${metrics.flexBasis}px`;
+		li.style.setProperty('--item-ratio', String(metrics.ratio));
+		li.style.flexBasis = 'calc(var(--grid-target-height, 320px) * var(--item-ratio))';
 
 		const card = document.createElement('div');
 		card.className = 'c-grid500__itemlink';
@@ -582,4 +607,5 @@ async function run() {
 }
 
 initSettingsPanel();
+initResponsiveTargetHeight();
 run();

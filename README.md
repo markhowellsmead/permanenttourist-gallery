@@ -130,10 +130,16 @@ Possible error responses:
 5. Renders a flex-based calculated grid inspired by grid500 logic using:
     - width: `exif.computed.width`
     - height: `exif.computed.height`
+    - target height: set as CSS custom property `--grid-target-height` on `<body>`
+        - `320px` by default
+        - `420px` when viewport width is greater than `1920px`
+        - dynamically updated via resize handler without re-rendering the grid
     - metrics:
-        - `flexGrow = width * 100 / height`
-        - `flexBasis = width * targetHeight / height`
+        - `ratio = width / height`
+        - `flexGrow = ratio * 100`
         - `paddingBottom = height / width * 100`
+        - each item sets `--item-ratio` CSS custom property
+        - `flexBasis = calc(var(--grid-target-height, 320px) * var(--item-ratio))`
 
 Rendered overlay content per image:
 
@@ -149,10 +155,12 @@ The settings panel is created dynamically in JavaScript (not server-rendered in 
 - A `Show captions` checkbox is inserted into the DOM by `app.js`
 - A `Month / year` select box is inserted into the DOM by `app.js`
 - A `Country / region` select box is inserted into the DOM by `app.js`
+- A `Reset filters` button is inserted into the DOM by `app.js`
 - Changing either select triggers a new API request and re-renders the grid
 - Both selectors work in tandem and are sent as query parameters (`month_year` + `country`)
 - Month/year options are generated from image capture dates and sent as `month_year=yyyy-mm`
 - Country/region options are generated from IPTC location metadata
+- The reset button clears both filters and is automatically hidden when no filters are active
 - Captions are hidden by default in CSS
 - Captions appear on image hover/focus with a transition
 - If `Show captions` is enabled, captions remain visible without hover
