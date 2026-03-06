@@ -1,5 +1,12 @@
 RewriteEngine On
 
+# Redirect non-image requests in /media to the site root
+RewriteRule ^media/?$ / [R=302,L]
+
+RewriteCond %{REQUEST_URI} ^/media/ [NC]
+RewriteCond %{REQUEST_URI} !\.(?:jpe?g|png|gif|webp|avif|svg)$ [NC]
+RewriteRule ^media/ / [R=302,L]
+
 # Rewrite all non-JPG requests to index.php
 RewriteCond %{REQUEST_URI} !\.jpe?g$ [NC]
 RewriteCond %{REQUEST_URI} !\.css$ [NC]
