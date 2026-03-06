@@ -3,5 +3,6 @@ RewriteEngine On
 # Rewrite all non-JPG requests to index.php
 RewriteCond %{REQUEST_URI} !\.jpe?g$ [NC]
 RewriteCond %{REQUEST_URI} !\.css$ [NC]
+RewriteCond %{REQUEST_URI} !\.js$ [NC]
 RewriteCond %{REQUEST_URI} !/index\.php$ [NC]
 RewriteRule ^ index.php [L,QSA]

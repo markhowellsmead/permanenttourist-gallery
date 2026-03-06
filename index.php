@@ -34,16 +34,4 @@ if ($path === '/build') {
     exit;
 }
 
-if ($path === '/app.js') {
-    $appFile = __DIR__ . '/app.js';
-    if (!is_file($appFile) || !is_readable($appFile)) {
-        require __DIR__ . '/404.php';
-        exit;
-    }
-
-    header('Content-Type: application/javascript; charset=utf-8');
-    readfile($appFile);
-    exit;
-}
-
 require __DIR__ . '/list.php';
