@@ -15,16 +15,26 @@ declare(strict_types=1);
 require_once __DIR__ . '/functions.php';
 
 use PT\Gallery\Build\MediaJsonBuilder;
+use PT\Gallery\Build\SitemapXmlBuilder;
 
 $rootDir = __DIR__;
 $mediaDir = $rootDir . '/media';
 $outputFile = $mediaDir . '/media.json';
+$sitemapFile = $rootDir . '/sitemap.xml';
+$siteUrl = getenv('SITE_URL');
+if ($siteUrl === false || $siteUrl === '') {
+	$siteUrl = 'https://gallery.permanenttourist.ch';
+}
 
 try {
 	$builder = new MediaJsonBuilder();
 	$result = $builder->buildWithDetails($mediaDir, $outputFile);
 
+	$sitemapBuilder = new SitemapXmlBuilder();
+	$sitemapUrlCount = $sitemapBuilder->buildFromMediaJson($outputFile, $sitemapFile, $siteUrl);
+
 	echo "Wrote {$result['total']} image records to {$outputFile}\n";
+	echo "Wrote sitemap index to {$sitemapFile} and {$sitemapUrlCount} URL entries to photo-sitemap.xml\n";
 
 	if ($result['new'] > 0) {
 		$monthKey = date('Y-m');

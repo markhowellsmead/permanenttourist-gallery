@@ -6,7 +6,7 @@ This project scans JPEG images in `media/`, extracts IPTC and EXIF metadata, wri
 
 Main parts:
 
-- `build.php`: scans images and generates `media/media.json` and `sitemap.xml`
+- `build.php`: scans images and generates `media/media.json`, `sitemap.xml`, and `photo-sitemap.xml`
 - `api.php`: GET-only JSON endpoint returning flattened data structure
 - `index.php`: front controller for dynamic routes (`/api`, `/build`, `/sitemap`) and default list page
 - `list.php`: HTML shell for the list/grid UI with cache-busted assets
@@ -41,7 +41,7 @@ What `build.php` does:
 5. Compares against existing `media/media.json` to identify new images
 6. Sorts records by URL
 7. Writes `media/media.json`
-8. Generates `sitemap.xml` with `/` and `/photo/<id>/` URLs
+8. Generates sitemap files (see "Sitemap generation" below)
 9. Logs newly added images to monthly log files in `logs/YYYY-MM.log`
 
 ### Monthly image logging
@@ -61,6 +61,57 @@ Logged 2 new image(s) to /path/to/logs/2026-03.log
 ```
 
 If no new images are found (all images were already in the JSON), only the total count is reported and no log file is created/updated.
+
+### Sitemap generation
+
+`build.php` automatically generates XML sitemaps following the Yoast SEO structure:
+
+**Files created:**
+- `sitemap.xml`: Sitemap index file pointing to child sitemaps
+- `photo-sitemap.xml`: Photo sitemap with all gallery URLs
+
+**Sitemap index structure** (`sitemap.xml`):
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://gallery.permanenttourist.ch/photo-sitemap.xml</loc>
+    <lastmod>2026-03-06T15:28:44+00:00</lastmod>
+  </sitemap>
+</sitemapindex>
+```
+
+**Photo sitemap structure** (`photo-sitemap.xml`):
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xsi:schemaLocation="..."
+        xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://gallery.permanenttourist.ch/</loc>
+  </url>
+  <url>
+    <loc>https://gallery.permanenttourist.ch/photo/20170919-_DSF1840/</loc>
+    <lastmod>2017-09-19T18:24:38+00:00</lastmod>
+    <image:image>
+      <image:loc>https://gallery.permanenttourist.ch/media/20170919-_DSF1840.jpg</image:loc>
+    </image:image>
+  </url>
+</urlset>
+```
+
+**Features:**
+- Follows Google Image Sitemap extension specification
+- Includes `lastmod` timestamps in ISO 8601 format (`YYYY-MM-DDTHH:MM:SS+00:00`)
+- Each photo URL includes an `<image:image>` element with `<image:loc>` pointing to the actual image file
+- Homepage URL included without image data
+- `lastmod` dates extracted from IPTC date/time fields with fallback to file modification time
+- Absolute URLs generated using `SITE_URL` environment variable
+
+**Accessing the sitemap:**
+- Main sitemap: `https://yourdomain.com/sitemap/`
+- Served via the `/sitemap` route in `index.php` → `sitemap.php`
 
 ## IPTC transformation details
 
@@ -483,13 +534,20 @@ Expected: command succeeds and updates `media/media.json`.
 6. Verify front-controller routes:
 
 - Open `/build` to trigger rebuild endpoint
+- Open `/sitemap` to view the sitemap index
 - Open an unknown dynamic path (for example `/something-random`) and confirm custom 404 page
 
-7. Verify update endpoint (if configured):
+7. Verify sitemap structure:
 
-- Request `/update` without token and confirm HTTP 403
-- Request `/update?token=YOUR_TOKEN` with valid token and confirm HTTP 200 with git pull output
-- Send a POST request to `/update?token=YOUR_TOKEN` and confirm HTTP 405
+- Open `/sitemap` (or `sitemap.xml` directly) and confirm XML sitemap index
+- Verify `photo-sitemap.xml` exists and contains URLs with `lastmod` and `image:image` elements
+- Confirm URLs are absolute (include full domain from `SITE_URL`)
+
+8. Verify update endpoint (if configured):
+
+- Request `/update` without signature and confirm HTTP 403
+- Send a properly signed POST request to `/update` and confirm HTTP 200 with success message
+- Send a GET request to `/update` and confirm HTTP 405
 
 ## License
 

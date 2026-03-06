@@ -6,3 +6,5 @@
 fromlive.sh
 /vendor/
 .env
+sitemap.xml
+*sitemap.xml
