@@ -20,6 +20,7 @@ RewriteRule ^ - [L]
 RewriteRule ^$ index.php [L,QSA]
 RewriteRule ^api/?$ index.php [L,QSA]
 RewriteRule ^build/?$ index.php [L,QSA]
+RewriteRule ^update/?$ index.php [L,QSA]
 
 # Everything else should render the custom 404 page
 RewriteRule ^ 404.php [L]
