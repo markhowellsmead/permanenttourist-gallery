@@ -2,24 +2,11 @@
 
 declare(strict_types=1);
 
-function getRequestPath(): string
-{
-	$requestUri = $_SERVER['REQUEST_URI'] ?? '/';
-	$path = parse_url($requestUri, PHP_URL_PATH);
-	if (!is_string($path) || $path === '') {
-		return '/';
-	}
+require_once __DIR__ . '/functions.php';
 
-	$scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/'));
-	if ($scriptDir !== '/' && $scriptDir !== '.' && str_starts_with($path, $scriptDir)) {
-		$path = substr($path, strlen($scriptDir));
-	}
+use PT\Gallery\Support\RequestHelper;
 
-	$path = '/' . ltrim($path, '/');
-	return $path === '' ? '/' : $path;
-}
-
-$path = rtrim(getRequestPath(), '/');
+$path = rtrim(RequestHelper::getRequestPath($_SERVER), '/');
 if ($path === '') {
 	$path = '/';
 }

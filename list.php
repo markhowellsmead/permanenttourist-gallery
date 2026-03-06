@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/functions.php';
 
-$listCssUrl = cacheBustedAsset('list.css');
-$appJsUrl = cacheBustedAsset('app.js');
+use PT\Gallery\Support\AssetHelper;
+
+$listCssUrl = AssetHelper::cacheBustedAsset('list.css');
+$appJsUrl = AssetHelper::cacheBustedAsset('app.js');
 ?>
 <!doctype html>
 <html lang="en">

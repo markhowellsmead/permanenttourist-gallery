@@ -9,6 +9,7 @@ RewriteRule ^media/ / [R=302,L]
 
 # Disallow direct access to helper include files
 RewriteRule ^functions\.php$ - [F,L,NC]
+RewriteRule ^src/ - [F,L,NC]
 
 # Serve existing files and directories directly
 RewriteCond %{REQUEST_FILENAME} -f [OR]

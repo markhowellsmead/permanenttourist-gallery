@@ -9,11 +9,6 @@ if (realpath((string) ($_SERVER['SCRIPT_FILENAME'] ?? '')) === __FILE__) {
 	exit;
 }
 
-function cacheBustedAsset(string $relativePath, bool $leadingSlash = false): string
-{
-	$absolutePath = __DIR__ . '/' . ltrim($relativePath, '/');
-	$version = is_file($absolutePath) ? (string) filemtime($absolutePath) : (string) time();
-	$path = ($leadingSlash ? '/' : '') . ltrim($relativePath, '/');
+require_once __DIR__ . '/src/Autoloader.php';
 
-	return $path . '?v=' . $version;
-}
+\PT\Gallery\Autoloader::register(__DIR__ . '/src');
