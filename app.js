@@ -652,6 +652,63 @@ function navigateToList() {
 	hideDetailView();
 }
 
+// Meta tag management for detail view
+function setMetaTag(property, content, useProperty = true) {
+	const attributeName = useProperty ? 'property' : 'name';
+	let tag = document.querySelector(`meta[${attributeName}="${property}"]`);
+
+	if (!tag) {
+		tag = document.createElement('meta');
+		tag.setAttribute(attributeName, property);
+		document.head.appendChild(tag);
+	}
+
+	tag.setAttribute('content', content);
+	tag.dataset.dynamicMeta = 'true';
+}
+
+function setCanonicalLink(url) {
+	let link = document.querySelector('link[rel="canonical"]');
+
+	if (!link) {
+		link = document.createElement('link');
+		link.rel = 'canonical';
+		document.head.appendChild(link);
+	}
+
+	link.href = url;
+	link.dataset.dynamicMeta = 'true';
+}
+
+function setDetailViewMetaTags(image, photoUrl, imageUrl) {
+	const title = getImageTitle(image);
+	const location = getImageLocation(image);
+	const description = `${title} · ${location}`;
+
+	// Set canonical link
+	setCanonicalLink(photoUrl);
+
+	// Set Open Graph tags
+	setMetaTag('og:title', title);
+	setMetaTag('og:description', description);
+	setMetaTag('og:image', imageUrl);
+	setMetaTag('og:url', photoUrl);
+	setMetaTag('og:type', 'website');
+	setMetaTag('og:site_name', DEFAULT_PAGE_TITLE);
+
+	// Set Twitter Card tags
+	setMetaTag('twitter:card', 'summary_large_image', false);
+	setMetaTag('twitter:title', title, false);
+	setMetaTag('twitter:description', description, false);
+	setMetaTag('twitter:image', imageUrl, false);
+}
+
+function clearDetailViewMetaTags() {
+	// Remove all dynamically created meta tags and canonical link
+	const dynamicTags = document.querySelectorAll('[data-dynamic-meta="true"]');
+	dynamicTags.forEach((tag) => tag.remove());
+}
+
 function showDetailView(photoId) {
 	const image = findImageByPhotoId(photoId);
 	if (!image) {
@@ -661,6 +718,11 @@ function showDetailView(photoId) {
 	}
 
 	document.title = `${getImageTitle(image)} – ${DEFAULT_PAGE_TITLE}`;
+
+	// Set meta tags for detail view
+	const photoUrl = `${window.location.origin}/photo/${photoId}/`;
+	const imageUrl = `${window.location.origin}${image.url}`;
+	setDetailViewMetaTags(image, photoUrl, imageUrl);
 
 	const detailView = document.getElementById('detail-view');
 	if (!detailView) {
@@ -735,6 +797,7 @@ function hideDetailView() {
 	}
 	document.body.style.overflow = '';
 	document.title = DEFAULT_PAGE_TITLE;
+	clearDetailViewMetaTags();
 }
 
 function handleRouteChange() {
