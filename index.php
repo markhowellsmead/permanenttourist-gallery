@@ -31,6 +31,11 @@ if ($path === '/build') {
 	exit;
 }
 
+if ($path === '/update') {
+	require __DIR__ . '/update.php';
+	exit;
+}
+
 if ($path === '/') {
 	require __DIR__ . '/list.php';
 	exit;

@@ -148,8 +148,88 @@ Possible error responses:
 
 - `/api` and `/api/` → `api.php`
 - `/build` and `/build/` → `build.php`
+- `/update` and `/update/` → `update.php`
 - `/` and `/?...` → `list.php`
 - any other dynamic path → `404.php`
+
+## Update endpoint
+
+The `/update` endpoint provides a way to pull the latest code from the git repository.
+
+**Endpoint:** `GET /update?token=YOUR_SECRET_TOKEN`
+
+**Authentication:** Requires a secret token passed as a query parameter.
+
+**Configuration:**
+
+Set the `UPDATE_TOKEN` environment variable:
+
+```bash
+export UPDATE_TOKEN="your_secure_random_token"
+```
+
+Or configure it in your web server environment. See `.env.example` for a reference configuration.
+
+Generate a secure token:
+
+```bash
+openssl rand -hex 32
+```
+
+**Usage example:**
+
+```bash
+curl "https://yourdomain.com/update?token=your_secret_token"
+```
+
+**Response format:**
+
+Success (HTTP 200):
+```json
+{
+  "success": true,
+  "message": "Update completed successfully.",
+  "output": [
+    "Already up to date."
+  ],
+  "timestamp": "2026-03-06 14:30:45"
+}
+```
+
+Failure (HTTP 500):
+```json
+{
+  "success": false,
+  "error": "update_failed",
+  "message": "Update failed. Details have been logged.",
+  "timestamp": "2026-03-06 14:30:45"
+}
+```
+
+Error responses:
+- `403` when token is missing or invalid
+- `405` when request method is not GET
+- `500` when git pull fails or directory change fails (details logged to `logs/update-errors.log`)
+
+**Error logging:**
+
+When an update fails, detailed error information (exit code, git output) is logged to `logs/update-errors.log` but not exposed in the API response. This prevents leaking sensitive information while maintaining debugging capabilities.
+
+Example log entry:
+```
+[2026-03-06 14:30:45] Update failed (exit code: 1)
+Directory: /path/to/project
+Output:
+fatal: not a git repository
+--------------------------------------------------------------------------------
+```
+
+**Security notes:**
+
+- Keep the token secret and use a cryptographically random value
+- Consider restricting access by IP address in your web server configuration
+- Review `logs/update-errors.log` regularly to detect unauthorized or failed attempts
+- Ensure the `logs/` directory has appropriate write permissions
 
 ## Frontend list/grid behavior
 
@@ -248,6 +328,26 @@ composer install
 This installs:
 - **PHPStan**: Static analysis tool for PHP code quality and compatibility checking
 
+### Environment Configuration
+
+Configure environment variables for optional features:
+
+```bash
+cp .env.example .env
+```
+
+Available environment variables:
+
+- `UPDATE_TOKEN`: Secret token for the `/update` endpoint (required for security)
+
+Generate a secure token:
+
+```bash
+openssl rand -hex 32
+```
+
+Set environment variables in your server configuration (Apache, nginx) or use a `.env` file with a library like `vlucas/phpdotenv` if needed.
+
 ### Code Quality
 
 #### PHPStan Analysis
@@ -316,6 +416,12 @@ Expected: command succeeds and updates `media/media.json`.
 
 - Open `/build` to trigger rebuild endpoint
 - Open an unknown dynamic path (for example `/something-random`) and confirm custom 404 page
+
+7. Verify update endpoint (if configured):
+
+- Request `/update` without token and confirm HTTP 403
+- Request `/update?token=YOUR_TOKEN` with valid token and confirm HTTP 200 with git pull output
+- Send a POST request to `/update?token=YOUR_TOKEN` and confirm HTTP 405
 
 ## License
 
