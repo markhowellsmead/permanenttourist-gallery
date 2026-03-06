@@ -1,0 +1,4 @@
+/media
+*.json
+.DS_Store
+fromlive.sh
