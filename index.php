@@ -36,7 +36,13 @@ if ($path === '/update') {
 	exit;
 }
 
-if ($path === '/') {
+if ($path === '/sitemap') {
+	require __DIR__ . '/sitemap.php';
+	exit;
+}
+
+// All other paths including /photo/* routes load the list view (SPA)
+if ($path === '/' || strpos($path, '/photo/') === 0) {
 	require __DIR__ . '/list.php';
 	exit;
 }

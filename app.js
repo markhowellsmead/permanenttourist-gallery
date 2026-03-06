@@ -156,6 +156,7 @@ function initResponsiveTargetHeight() {
 }
 
 const SHOW_CAPTIONS_STORAGE_KEY = 'gallery.showCaptions';
+const DEFAULT_PAGE_TITLE = document.title;
 let selectedMonthYear = '';
 let selectedCountry = '';
 
@@ -526,6 +527,16 @@ function renderImages(images) {
 		card.appendChild(meta);
 		card.appendChild(metaSecondary);
 		li.appendChild(card);
+
+		// Add click handler for detail view
+		card.style.cursor = 'pointer';
+		card.addEventListener('click', () => {
+			const photoId = getPhotoIdFromUrl(item.url);
+			if (photoId) {
+				navigateToPhoto(photoId);
+			}
+		});
+
 		list.appendChild(li);
 	}
 }
@@ -561,6 +572,9 @@ async function run() {
 			return bTs - aTs;
 		});
 
+		// Cache all images for SPA navigation
+		allImagesCache = withCaptureDates;
+
 		renderImages(withCaptureDates);
 		const imageCount = withCaptureDates.length;
 		const imageNoun = imageCount === 1 ? 'image' : 'images';
@@ -593,6 +607,176 @@ async function run() {
 	}
 }
 
+// SPA functionality
+let allImagesCache = [];
+
+function getPhotoIdFromUrl(imageUrl) {
+	if (typeof imageUrl !== 'string') {
+		return null;
+	}
+
+	// Extract filename without extension from URL like "/media/20170919-_DSF1840.jpg"
+	const match = imageUrl.match(/\/([^/]+)\.(jpe?g|png|gif|webp)$/i);
+	return match ? match[1] : null;
+}
+
+function findImageByPhotoId(photoId) {
+	return allImagesCache.find((item) => {
+		const itemPhotoId = getPhotoIdFromUrl(item.url);
+		return itemPhotoId === photoId;
+	});
+}
+
+function getCurrentRoute() {
+	const path = window.location.pathname;
+	const photoMatch = path.match(/^\/photo\/([^/]+)\/?$/);
+
+	if (photoMatch) {
+		return {
+			type: 'photo',
+			photoId: photoMatch[1],
+		};
+	}
+
+	return { type: 'list' };
+}
+
+function navigateToPhoto(photoId) {
+	const newUrl = `/photo/${photoId}/`;
+	window.history.pushState({ type: 'photo', photoId }, '', newUrl);
+	showDetailView(photoId);
+}
+
+function navigateToList() {
+	window.history.pushState({ type: 'list' }, '', '/');
+	hideDetailView();
+}
+
+function showDetailView(photoId) {
+	const image = findImageByPhotoId(photoId);
+	if (!image) {
+		console.error('Image not found:', photoId);
+		navigateToList();
+		return;
+	}
+
+	document.title = `${getImageTitle(image)} – ${DEFAULT_PAGE_TITLE}`;
+
+	const detailView = document.getElementById('detail-view');
+	if (!detailView) {
+		return;
+	}
+
+	// Build detail view content
+	detailView.innerHTML = '';
+
+	const closeButton = document.createElement('button');
+	closeButton.className = 'detail-view__close';
+	closeButton.textContent = '× Close';
+	closeButton.setAttribute('aria-label', 'Close detail view');
+	closeButton.addEventListener('click', () => {
+		navigateToList();
+	});
+
+	const imageContainer = document.createElement('div');
+	imageContainer.className = 'detail-view__image-container';
+
+	const img = document.createElement('img');
+	img.className = 'detail-view__image';
+	img.src = image.url;
+	img.alt = getImageTitle(image);
+
+	const caption = document.createElement('div');
+	caption.className = 'detail-view__caption';
+
+	const title = document.createElement('h2');
+	title.className = 'detail-view__title';
+	title.textContent = getImageTitle(image);
+
+	const location = document.createElement('div');
+	location.className = 'detail-view__location';
+	location.textContent = getImageLocation(image);
+
+	const date = document.createElement('div');
+	date.className = 'detail-view__date';
+	date.textContent = formatTimestamp(image.captureTs);
+
+	const tags = getImageTags(image);
+
+	caption.appendChild(title);
+	caption.appendChild(location);
+	caption.appendChild(date);
+
+	if (tags && tags.trim() !== '') {
+		const tagsDiv = document.createElement('div');
+		tagsDiv.className = 'detail-view__tags';
+		tagsDiv.textContent = tags;
+		caption.appendChild(tagsDiv);
+	}
+
+	imageContainer.appendChild(img);
+
+	detailView.appendChild(closeButton);
+	detailView.appendChild(imageContainer);
+	detailView.appendChild(caption);
+
+	detailView.hidden = false;
+	document.body.style.overflow = 'hidden';
+
+	// Focus close button for accessibility
+	closeButton.focus();
+}
+
+function hideDetailView() {
+	const detailView = document.getElementById('detail-view');
+	if (detailView) {
+		detailView.hidden = true;
+		detailView.innerHTML = '';
+	}
+	document.body.style.overflow = '';
+	document.title = DEFAULT_PAGE_TITLE;
+}
+
+function handleRouteChange() {
+	const route = getCurrentRoute();
+
+	if (route.type === 'photo') {
+		showDetailView(route.photoId);
+	} else {
+		hideDetailView();
+	}
+}
+
+// Handle browser back/forward buttons
+window.addEventListener('popstate', (event) => {
+	handleRouteChange();
+});
+
+// Handle Escape key to close detail view
+window.addEventListener('keydown', (event) => {
+	if (event.key === 'Escape') {
+		const detailView = document.getElementById('detail-view');
+		if (detailView && !detailView.hidden) {
+			navigateToList();
+		}
+	}
+});
+
+// Handle initial load
+document.addEventListener('DOMContentLoaded', () => {
+	const route = getCurrentRoute();
+	if (route.type === 'photo') {
+		// We need to wait for images to load before showing detail view
+		// The detail view will be shown after data loads
+	}
+});
+
 initSettingsPanel();
 initResponsiveTargetHeight();
-run();
+run().then(() => {
+	// After initial data load, check if we should show a detail view
+	const route = getCurrentRoute();
+	if (route.type === 'photo') {
+		showDetailView(route.photoId);
+	}
+});

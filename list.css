@@ -183,3 +183,126 @@ body.show-captions .meta-secondary {
 .meta-secondary .location {
 	opacity: 0.85;
 }
+
+/* Detail View (SPA Modal) */
+.detail-view {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 1000;
+	background: rgba(0, 0, 0, 0.65);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem;
+	animation: fadeIn 0.2s ease;
+	backdrop-filter: blur(1rem);
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+.detail-view[hidden] {
+	display: none;
+}
+
+.detail-view__close {
+	position: absolute;
+	top: 1rem;
+	right: 1rem;
+	z-index: 1001;
+	padding: 0.75rem 1.5rem;
+	font-size: 1rem;
+	font-weight: 600;
+	color: #fff;
+	background: rgba(0, 0, 0, 0.7);
+	border: 2px solid #fff;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.detail-view__close:hover,
+.detail-view__close:focus {
+	background: rgba(255, 255, 255, 0.2);
+	transform: scale(1.05);
+}
+
+.detail-view__image-container {
+	max-width: 90vw;
+	max-height: 70vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 2rem;
+}
+
+.detail-view__image {
+	max-width: 100%;
+	max-height: 70vh;
+	height: auto;
+	width: auto;
+	object-fit: contain;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.detail-view__caption {
+	max-width: 800px;
+	color: #fff;
+	text-align: center;
+}
+
+.detail-view__title {
+	margin: 0 0 0.5rem;
+	font-size: 1.5rem;
+	font-weight: 600;
+}
+
+.detail-view__location {
+	font-size: 1rem;
+	margin-bottom: 0.5rem;
+	opacity: 0.9;
+}
+
+.detail-view__date {
+	font-size: 0.9rem;
+	margin-bottom: 0.5rem;
+	opacity: 0.8;
+}
+
+.detail-view__tags {
+	font-size: 0.85rem;
+	margin-top: 1rem;
+	opacity: 0.7;
+	font-style: italic;
+}
+
+@media (max-width: 768px) {
+	.detail-view__image-container {
+		max-height: 60vh;
+	}
+
+	.detail-view__image {
+		max-height: 60vh;
+	}
+
+	.detail-view__close {
+		top: 0.5rem;
+		right: 0.5rem;
+		padding: 0.5rem 1rem;
+		font-size: 0.9rem;
+	}
+
+	.detail-view__title {
+		font-size: 1.2rem;
+	}
+}

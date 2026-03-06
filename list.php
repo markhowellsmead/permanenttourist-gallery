@@ -15,8 +15,8 @@ require_once __DIR__ . '/functions.php';
 
 use PT\Gallery\Support\AssetHelper;
 
-$listCssUrl = AssetHelper::cacheBustedAsset('list.css');
-$appJsUrl = AssetHelper::cacheBustedAsset('app.js');
+$listCssUrl = AssetHelper::cacheBustedAsset('list.css', true);
+$appJsUrl = AssetHelper::cacheBustedAsset('app.js', true);
 ?>
 <!doctype html>
 <html lang="en">
@@ -24,7 +24,7 @@ $appJsUrl = AssetHelper::cacheBustedAsset('app.js');
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Gallery</title>
+	<title>Permanent Tourist photographic archive</title>
 	<link rel="stylesheet" href="<?php echo htmlspecialchars($listCssUrl, ENT_QUOTES, 'UTF-8'); ?>">
 </head>
 
@@ -33,6 +33,7 @@ $appJsUrl = AssetHelper::cacheBustedAsset('app.js');
 	<p>Photos by Mark Howells-Mead. (<a href="https://www.permanenttourist.ch/">Main website</a>)</p>
 	<div id="status">Loading…</div>
 	<ul id="image-list"></ul>
+	<div id="detail-view" class="detail-view" hidden></div>
 
 	<script src="<?php echo htmlspecialchars($appJsUrl, ENT_QUOTES, 'UTF-8'); ?>"></script>
 </body>

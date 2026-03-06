@@ -6,9 +6,9 @@ This project scans JPEG images in `media/`, extracts IPTC and EXIF metadata, wri
 
 Main parts:
 
-- `build.php`: scans images and generates `media/media.json` with complete metadata
+- `build.php`: scans images and generates `media/media.json` and `sitemap.xml`
 - `api.php`: GET-only JSON endpoint returning flattened data structure
-- `index.php`: front controller for dynamic routes (`/api`, `/build`) and default list page
+- `index.php`: front controller for dynamic routes (`/api`, `/build`, `/sitemap`) and default list page
 - `list.php`: HTML shell for the list/grid UI with cache-busted assets
 - `functions.php`: bootstrap file which registers autoloading for namespaced classes and loads `.env` file
 - `app.js`: client-side data fetch, sorting, metadata extraction, and grid rendering
@@ -41,7 +41,8 @@ What `build.php` does:
 5. Compares against existing `media/media.json` to identify new images
 6. Sorts records by URL
 7. Writes `media/media.json`
-8. Logs newly added images to monthly log files in `logs/YYYY-MM.log`
+8. Generates `sitemap.xml` with `/` and `/photo/<id>/` URLs
+9. Logs newly added images to monthly log files in `logs/YYYY-MM.log`
 
 ### Monthly image logging
 
@@ -149,6 +150,7 @@ Possible error responses:
 - `/api` and `/api/` → `api.php`
 - `/build` and `/build/` → `build.php`
 - `/update` and `/update/` → `update.php`
+- `/sitemap` and `/sitemap/` → `sitemap.php`
 - `/` and `/?...` → `list.php`
 - any other dynamic path → `404.php`
 
@@ -297,6 +299,31 @@ Rendered overlay content per image:
 - comma-separated tags from `keywords` array
 - formatted capture date/time
 
+### Single-page application (SPA)
+
+The gallery operates as a single-page application with client-side routing:
+
+**Detail view:**
+- Clicking any image opens a full-screen detail view with larger image display
+- Detail view includes image metadata: title, location, date, and tags
+- Close button returns to list view
+- Escape key closes detail view
+- Browser back/forward buttons work correctly
+
+**URL routing:**
+- List view: `/`
+- Photo detail: `/photo/FILENAME/` (e.g., `/photo/20170919-_DSF1840/`)
+- Direct links to photos work (shareable URLs)
+- Uses `window.history` API for state management
+- No page reloads when navigating between views
+
+**Implementation:**
+- Routes handled via `.htaccess` rewrite rules
+- JavaScript manages URL state with `pushState()`
+- Photo ID extracted from image filename (without extension)
+- `popstate` event handles browser navigation
+- Detail view rendered dynamically from cached image data
+
 ### Settings panel
 
 The settings panel is created dynamically in JavaScript (not server-rendered in PHP).
@@ -370,12 +397,14 @@ Edit `.env` and set your values:
 ```dotenv
 UPDATE_TOKEN=your_secure_random_token_here
 GITHUB_TOKEN=your_github_personal_access_token
+SITE_URL=https://gallery.permanenttourist.ch
 ```
 
 Available environment variables:
 
 - `UPDATE_TOKEN`: Secret token for the `/update` endpoint (required for security)
 - `GITHUB_TOKEN`: GitHub Personal Access Token for HTTPS authentication (optional, only needed if git remote uses SSH and web server user has no SSH keys)
+- `SITE_URL`: Base URL used to generate absolute sitemap URLs during `/build` (optional, defaults to `https://gallery.permanenttourist.ch`)
 
 Generate a secure token:
 
