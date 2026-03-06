@@ -7,6 +7,9 @@ RewriteCond %{REQUEST_URI} ^/media/ [NC]
 RewriteCond %{REQUEST_URI} !\.(?:jpe?g|png|gif|webp|avif|svg)$ [NC]
 RewriteRule ^media/ / [R=302,L]
 
+# Disallow direct access to helper include files
+RewriteRule ^functions\.php$ - [F,L,NC]
+
 # Serve existing files and directories directly
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d

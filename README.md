@@ -10,6 +10,7 @@ Main parts:
 - `api.php`: GET-only JSON endpoint returning lowercased-key data
 - `index.php`: front controller for dynamic routes (`/api`, `/build`) and default list page
 - `list.php`: HTML shell for the list/grid UI with cache-busted assets
+- `functions.php`: shared PHP helper functions (for example cache-busting URLs)
 - `app.js`: client-side data fetch, sorting, metadata extraction, and grid rendering
 - `list.css`: grid/layout styling
 - `404.css`: styling for the custom 404 page
@@ -97,6 +98,7 @@ Possible error responses:
 
 - `.jpg/.jpeg`, `.css`, and `.js` are served directly
 - all other requests are routed to `index.php`
+- direct requests to `functions.php` are denied (`403`)
 
 `index.php` then dispatches:
 

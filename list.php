@@ -2,13 +2,7 @@
 
 declare(strict_types=1);
 
-function cacheBustedAsset(string $relativePath): string
-{
-	$absolutePath = __DIR__ . '/' . ltrim($relativePath, '/');
-	$version = is_file($absolutePath) ? (string) filemtime($absolutePath) : (string) time();
-
-	return $relativePath . '?v=' . $version;
-}
+require_once __DIR__ . '/functions.php';
 
 $listCssUrl = cacheBustedAsset('list.css');
 $appJsUrl = cacheBustedAsset('app.js');

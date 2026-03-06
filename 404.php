@@ -2,17 +2,11 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/functions.php';
+
 http_response_code(404);
 
-function cacheBustedAsset(string $relativePath): string
-{
-    $absolutePath = __DIR__ . '/' . ltrim($relativePath, '/');
-    $version = is_file($absolutePath) ? (string) filemtime($absolutePath) : (string) time();
-
-    return '/' . ltrim($relativePath, '/') . '?v=' . $version;
-}
-
-$errorCssUrl = cacheBustedAsset('404.css');
+$errorCssUrl = cacheBustedAsset('404.css', true);
 ?>
 <!doctype html>
 <html lang="en">
