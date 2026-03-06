@@ -8,6 +8,8 @@ function getByPath(obj, path) {
     );
 }
 
+const LOCALE = "en-GB";
+
 function parseExifDateTime(value) {
     if (typeof value !== "string") {
         return null;
@@ -74,7 +76,10 @@ function formatTimestamp(ts) {
         return "Unknown capture date";
     }
 
-    return new Date(ts).toLocaleString();
+    return new Date(ts).toLocaleDateString(LOCALE, {
+        month: "long",
+        year: "numeric",
+    });
 }
 
 function getFirstIptcValue(item, key) {
@@ -293,7 +298,7 @@ function populateCountryFilterOptions(items) {
     }
 
     const sortedCountries = Array.from(countries).sort((a, b) =>
-        a.localeCompare(b),
+        a.localeCompare(b, LOCALE),
     );
 
     const existingValue = countrySelect.value;
