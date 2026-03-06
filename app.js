@@ -1,5 +1,3 @@
-console.log('✅ JavaScript loaded successfully.');
-
 const LOCALE = 'en-GB';
 
 function parseExifDateTime(value) {
