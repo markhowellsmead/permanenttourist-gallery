@@ -94,18 +94,36 @@ function getImageTitle(item) {
 }
 
 function getImageLocation(item) {
+    const country = getFirstIptcValue(item, "country_primary_location_name");
+    const includeCountry =
+        typeof country === "string" &&
+        country.trim().toLowerCase() !== "united kingdom";
+
     const parts = [
         getFirstIptcValue(item, "sublocation"),
         getFirstIptcValue(item, "city"),
         getFirstIptcValue(item, "state_province"),
-        getFirstIptcValue(item, "country_primary_location_name"),
+        includeCountry ? country : null,
     ].filter(Boolean);
 
-    if (parts.length === 0) {
+    const seen = new Set();
+    const uniqueParts = [];
+
+    for (const part of parts) {
+        const key = part.toLowerCase();
+        if (seen.has(key)) {
+            continue;
+        }
+
+        seen.add(key);
+        uniqueParts.push(part);
+    }
+
+    if (uniqueParts.length === 0) {
         return "Unknown location";
     }
 
-    return parts.join(", ");
+    return uniqueParts.join(", ");
 }
 
 function getImageTags(item) {
