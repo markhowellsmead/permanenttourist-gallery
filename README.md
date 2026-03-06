@@ -72,6 +72,7 @@ Rules:
 - Only `GET` is allowed
 - Non-GET requests return HTTP `405` with `Allow: GET`
 - Reads `media/media.json`
+- Supports optional filtering via `country` query parameter (for example `/api?country=Scotland`)
 - Recursively lowercases all associative object keys before output
 
 Possible error responses:
@@ -130,6 +131,12 @@ Rendered overlay content per image:
 The settings panel is created dynamically in JavaScript (not server-rendered in PHP).
 
 - A `Show captions` checkbox is inserted into the DOM by `app.js`
+- A `Country / region` select box is inserted into the DOM by `app.js`
+- Changing the select value triggers a new API request and re-renders the grid
+- Filter options are populated from IPTC metadata:
+   - all non-UK entries contribute `country_primary_location_name`
+   - UK entries contribute regional terms from `state_province` / `sublocation`
+   - `United Kingdom` itself is intentionally hidden as a selectable option
 - Captions are hidden by default in CSS
 - Captions appear on image hover/focus with a transition
 - If `Show captions` is enabled, captions remain visible without hover

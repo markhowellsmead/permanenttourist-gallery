@@ -152,6 +152,7 @@ function getGridMetrics(item, targetHeight) {
 }
 
 const SHOW_CAPTIONS_STORAGE_KEY = "gallery.showCaptions";
+let selectedLocation = "";
 
 function setShowCaptionsEnabled(enabled) {
     document.body.classList.toggle("show-captions", enabled);
@@ -176,15 +177,39 @@ function createCaptionSettingsPanel() {
 
     label.appendChild(checkbox);
     label.appendChild(document.createTextNode(" Keep image captions visible"));
+
+    const countryLabel = document.createElement("label");
+    countryLabel.setAttribute("for", "country-filter-select");
+    countryLabel.textContent = "Country / region";
+
+    const countrySelect = document.createElement("select");
+    countrySelect.id = "country-filter-select";
+
+    const allOption = document.createElement("option");
+    allOption.value = "";
+    allOption.textContent = "All countries and regions";
+    countrySelect.appendChild(allOption);
+
     panel.appendChild(label);
+    panel.appendChild(countryLabel);
+    panel.appendChild(countrySelect);
 
     status.parentNode.insertBefore(panel, status);
 
-    return checkbox;
+    return {
+        checkbox,
+        countrySelect,
+    };
 }
 
-function initCaptionSettings() {
-    const checkbox = createCaptionSettingsPanel();
+function initSettingsPanel() {
+    const settings = createCaptionSettingsPanel();
+    if (!settings) {
+        return;
+    }
+
+    const checkbox = settings.checkbox;
+    const countrySelect = settings.countrySelect;
     if (!(checkbox instanceof HTMLInputElement)) {
         return;
     }
@@ -210,6 +235,102 @@ function initCaptionSettings() {
             );
         } catch (_error) {}
     });
+
+    if (countrySelect instanceof HTMLSelectElement) {
+        countrySelect.addEventListener("change", () => {
+            selectedLocation = countrySelect.value;
+            run();
+        });
+    }
+}
+
+function getLocationTerms(item) {
+    const country = getFirstIptcValue(item, "country_primary_location_name");
+    const terms = [];
+
+    const isUnitedKingdom =
+        typeof country === "string" &&
+        country.trim().toLowerCase() === "united kingdom";
+
+    if (
+        typeof country === "string" &&
+        country.trim() !== "" &&
+        !isUnitedKingdom
+    ) {
+        terms.push(country.trim());
+    }
+
+    if (isUnitedKingdom) {
+        const regionalTerms = [
+            getFirstIptcValue(item, "state_province"),
+            getFirstIptcValue(item, "sublocation"),
+        ].filter(term => typeof term === "string" && term.trim() !== "");
+
+        for (const term of regionalTerms) {
+            terms.push(term.trim());
+        }
+    }
+
+    if (terms.length === 0) {
+        return ["Unknown location"];
+    }
+
+    return Array.from(new Set(terms));
+}
+
+function populateCountryFilterOptions(items) {
+    const countrySelect = document.getElementById("country-filter-select");
+    if (!(countrySelect instanceof HTMLSelectElement)) {
+        return;
+    }
+
+    const countries = new Set();
+    for (const item of items) {
+        const terms = getLocationTerms(item);
+        for (const term of terms) {
+            countries.add(term);
+        }
+    }
+
+    const sortedCountries = Array.from(countries).sort((a, b) =>
+        a.localeCompare(b),
+    );
+
+    const existingValue = countrySelect.value;
+    while (countrySelect.options.length > 1) {
+        countrySelect.remove(1);
+    }
+
+    for (const country of sortedCountries) {
+        const option = document.createElement("option");
+        option.value = country;
+        option.textContent = country;
+        countrySelect.appendChild(option);
+    }
+
+    countrySelect.value = existingValue;
+}
+
+async function fetchImageData(location = "") {
+    const url = new URL("/api", window.location.origin);
+    if (location !== "") {
+        url.searchParams.set("country", location);
+    }
+
+    const response = await fetch(url.toString(), {
+        method: "GET",
+    });
+
+    if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!Array.isArray(data)) {
+        throw new Error("Unexpected API response format.");
+    }
+
+    return data;
 }
 
 function renderImages(images) {
@@ -277,16 +398,15 @@ async function run() {
     const status = document.getElementById("status");
 
     try {
-        const response = await fetch("/api", {
-            method: "GET",
-        });
-        if (!response.ok) {
-            throw new Error(`API returned ${response.status}`);
-        }
+        const data = await fetchImageData(selectedLocation);
 
-        const data = await response.json();
-        if (!Array.isArray(data)) {
-            throw new Error("Unexpected API response format.");
+        const countrySelect = document.getElementById("country-filter-select");
+        if (
+            selectedLocation === "" &&
+            countrySelect instanceof HTMLSelectElement &&
+            countrySelect.options.length <= 1
+        ) {
+            populateCountryFilterOptions(data);
         }
 
         const withCaptureDates = data.map(item => ({
@@ -305,11 +425,14 @@ async function run() {
         });
 
         renderImages(withCaptureDates);
-        status.textContent = `Loaded ${withCaptureDates.length} images.`;
+        status.textContent =
+            selectedLocation === ""
+                ? `Loaded ${withCaptureDates.length} images.`
+                : `Loaded ${withCaptureDates.length} images for ${selectedLocation}.`;
     } catch (error) {
         status.textContent = `Failed to load images: ${error.message}`;
     }
 }
 
-initCaptionSettings();
+initSettingsPanel();
 run();
