@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * 404 Error Page
+ *
+ * Custom 404 not found error page with styled template.
+ *
+ * @package PT\Gallery
+ * @author  Mark Howells-Mead
+ */
+
 declare(strict_types=1);
 
 require_once __DIR__ . '/functions.php';

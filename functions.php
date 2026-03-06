@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * Bootstrap File
+ *
+ * Registers PSR-4 autoloader for PT\Gallery namespace and blocks direct access.
+ *
+ * @package PT\Gallery
+ * @author  Mark Howells-Mead
+ */
+
 declare(strict_types=1);
 
 if (realpath((string) ($_SERVER['SCRIPT_FILENAME'] ?? '')) === __FILE__) {

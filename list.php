@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * List View Template
+ *
+ * Renders the main gallery HTML page with cache-busted asset references.
+ *
+ * @package PT\Gallery
+ * @author  Mark Howells-Mead
+ */
+
 declare(strict_types=1);
 
 require_once __DIR__ . '/functions.php';

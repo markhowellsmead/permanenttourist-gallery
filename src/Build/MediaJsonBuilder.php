@@ -1,5 +1,15 @@
 <?php
 
+/**
+ * Media JSON Builder
+ *
+ * Scans media directory, extracts IPTC/EXIF metadata from JPEG images,
+ * and generates media.json index with monthly logging of new images.
+ *
+ * @package PT\Gallery\Build
+ * @author  Mark Howells-Mead
+ */
+
 declare(strict_types=1);
 
 namespace PT\Gallery\Build;
@@ -8,14 +18,40 @@ use FilesystemIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
+/**
+ * Builder class for generating media.json from image metadata
+ */
 final class MediaJsonBuilder
 {
+	/**
+	 * Build media.json from directory scan
+	 *
+	 * Wrapper method that returns only the total image count.
+	 *
+	 * @param string $mediaDir    Path to media directory
+	 * @param string $outputFile  Path to output JSON file
+	 *
+	 * @return int Total number of images processed
+	 * @throws \RuntimeException If media directory not found
+	 */
 	public function build(string $mediaDir, string $outputFile): int
 	{
 		$result = $this->buildWithDetails($mediaDir, $outputFile);
 		return $result['total'];
 	}
 
+	/**
+	 * Build media.json with detailed statistics
+	 *
+	 * Scans media directory for JPEG images, extracts metadata, identifies
+	 * new images, writes JSON file, and logs new additions.
+	 *
+	 * @param string $mediaDir    Path to media directory
+	 * @param string $outputFile  Path to output JSON file
+	 *
+	 * @return array Associative array with 'total' and 'new' image counts
+	 * @throws \RuntimeException If media directory not found or write fails
+	 */
 	public function buildWithDetails(string $mediaDir, string $outputFile): array
 	{
 		if (!is_dir($mediaDir)) {
@@ -57,6 +93,13 @@ final class MediaJsonBuilder
 
 		usort($images, static fn(array $a, array $b): int => strcmp($a['url'], $b['url']));
 
+		/**
+		 * Get list of image URLs from existing JSON file
+		 *
+		 * @param string $outputFile Path to existing media.json file
+		 *
+		 * @return array Array of URL strings
+		 */
 		$json = json_encode(
 			$images,
 			JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
@@ -87,6 +130,17 @@ final class MediaJsonBuilder
 		}
 
 		$content = @file_get_contents($outputFile);
+		/**
+		 * Log newly added images to monthly log file
+		 *
+		 * Creates logs directory if needed and appends timestamped entries
+		 * for each new image URL to YYYY-MM.log file.
+		 *
+		 * @param array  $newUrls   Array of new image URLs
+		 * @param string $mediaDir  Path to media directory
+		 *
+		 * @return void
+		 */
 		if ($content === false) {
 			return [];
 		}
@@ -98,6 +152,16 @@ final class MediaJsonBuilder
 
 		$urls = [];
 		foreach ($data as $item) {
+			/**
+			 * Recursively normalize values for safe UTF-8 JSON encoding
+			 *
+			 * Converts arrays, objects, and strings to valid UTF-8,
+			 * stripping invalid characters as needed.
+			 *
+			 * @param mixed $value Value to normalize
+			 *
+			 * @return mixed Normalized value
+			 */
 			if (isset($item['url']) && is_string($item['url'])) {
 				$urls[] = $item['url'];
 			}
@@ -132,6 +196,16 @@ final class MediaJsonBuilder
 	{
 		if (is_array($value)) {
 			$normalized = [];
+			/**
+			 * Convert IPTC label to legible snake_case key
+			 *
+			 * Transliterates special characters, converts to lowercase,
+			 * and replaces non-alphanumeric characters with underscores.
+			 *
+			 * @param string $label IPTC label to convert
+			 *
+			 * @return string Snake_case key
+			 */
 			foreach ($value as $key => $item) {
 				$normalized[$key] = $this->normalizeValue($item);
 			}
@@ -140,6 +214,16 @@ final class MediaJsonBuilder
 
 		if (is_object($value)) {
 			return $this->normalizeValue((array) $value);
+			/**
+			 * Get human-readable label for IPTC tag key
+			 *
+			 * Maps IPTC codes (e.g., '2#101') to descriptive labels based on
+			 * IPTC Photo Metadata/IIM specification.
+			 *
+			 * @param string $iptcKey IPTC tag key (e.g., '2#101')
+			 *
+			 * @return string Human-readable label or original key if unknown
+			 */
 		}
 
 		if (is_string($value)) {
@@ -206,6 +290,16 @@ final class MediaJsonBuilder
 			'2#038' => 'Expiration Time',
 			'2#040' => 'Special Instructions',
 			'2#042' => 'Action Advised',
+			/**
+			 * Restructure raw IPTC data into legible format
+			 *
+			 * Converts IPTC tag codes to readable keys and wraps values
+			 * with original tag reference.
+			 *
+			 * @param array $parsed Raw IPTC data from iptcparse()
+			 *
+			 * @return array Restructured IPTC data with readable keys
+			 */
 			'2#045' => 'Reference Service',
 			'2#047' => 'Reference Date',
 			'2#050' => 'Reference Number',
@@ -225,6 +319,15 @@ final class MediaJsonBuilder
 			'2#101' => 'Country/Primary Location Name',
 			'2#103' => 'Original Transmission Reference',
 			'2#105' => 'Headline',
+			/**
+			 * Extract IPTC metadata from image file
+			 *
+			 * Reads APP13 segment from JPEG and parses IPTC data.
+			 *
+			 * @param string $filePath Path to image file
+			 *
+			 * @return array Structured IPTC data or empty array if none found
+			 */
 			'2#110' => 'Credit',
 			'2#115' => 'Source',
 			'2#116' => 'Copyright Notice',
@@ -233,6 +336,15 @@ final class MediaJsonBuilder
 			'2#121' => 'Local Caption',
 			'2#122' => 'Writer/Editor',
 			'2#125' => 'Rasterized Caption',
+			/**
+			 * Extract EXIF metadata from image file
+			 *
+			 * Reads all EXIF sections using exif_read_data() if available.
+			 *
+			 * @param string $filePath Path to image file
+			 *
+			 * @return array Normalized EXIF data or empty array if unavailable
+			 */
 			'2#130' => 'Image Type',
 			'2#131' => 'Image Orientation',
 			'2#135' => 'Language Identifier',

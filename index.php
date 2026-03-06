@@ -1,5 +1,15 @@
 <?php
 
+/**
+ * Front Controller
+ *
+ * Routes incoming requests to appropriate handlers based on request path.
+ * Supports /api, /build, and default list view routes.
+ *
+ * @package PT\Gallery
+ * @author  Mark Howells-Mead
+ */
+
 declare(strict_types=1);
 
 require_once __DIR__ . '/functions.php';

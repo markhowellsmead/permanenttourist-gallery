@@ -1,5 +1,15 @@
 <?php
 
+/**
+ * Build Script
+ *
+ * Scans media directory for JPEG images, extracts IPTC/EXIF metadata,
+ * generates media.json index, and logs newly added images to monthly log files.
+ *
+ * @package PT\Gallery
+ * @author  Mark Howells-Mead
+ */
+
 declare(strict_types=1);
 
 require_once __DIR__ . '/functions.php';

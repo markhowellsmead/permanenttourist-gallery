@@ -1,11 +1,35 @@
 <?php
 
+/**
+ * Media API Service
+ *
+ * Handles API requests for media data with filtering and JSON response.
+ *
+ * @package PT\Gallery\Api
+ * @author  Mark Howells-Mead
+ */
+
 declare(strict_types=1);
 
 namespace PT\Gallery\Api;
 
+/**
+ * Service class for handling media API requests
+ */
 final class MediaApiService
 {
+	/**
+	 * Handle API request for media data
+	 *
+	 * Validates request method, reads media JSON file, applies filters,
+	 * and returns JSON response with lowercased keys.
+	 *
+	 * @param string $requestMethod Request HTTP method (only GET allowed)
+	 * @param array  $queryParams   Query parameters for filtering
+	 * @param string $jsonFile      Path to media.json file
+	 *
+	 * @return void
+	 */
 	public function handle(string $requestMethod, array $queryParams, string $jsonFile): void
 	{
 		header('Content-Type: application/json; charset=utf-8');
@@ -82,7 +106,23 @@ final class MediaApiService
 				return;
 			}
 
+			/**
+			 * Send JSON response with HTTP status code and optional headers
+			 *
+			 * @param int   $statusCode HTTP status code
+			 * @param array $payload    Data to encode as JSON
+			 * @param array $headers    Additional HTTP headers (default: [])
+			 *
+			 * @return void
+			 */
 			$data = array_values(array_filter($data, function ($item) use ($monthYearFilter): bool {
+				/**
+				 * Normalize a string value for case-insensitive comparison
+				 *
+				 * @param string $value String to normalize
+				 *
+				 * @return string Lowercased and trimmed string
+				 */
 				return $this->getCaptureMonthYear($item) === $monthYearFilter;
 			}));
 		}
@@ -94,6 +134,15 @@ final class MediaApiService
 		);
 	}
 
+	/**
+	 * Send JSON response with HTTP status code and optional headers
+	 *
+	 * @param int   $statusCode HTTP status code
+	 * @param array $payload    Data to encode as JSON
+	 * @param array $headers    Additional HTTP headers (default: [])
+	 *
+	 * @return void
+	 */
 	private function sendJson(int $statusCode, array $payload, array $headers = []): void
 	{
 		http_response_code($statusCode);
@@ -104,6 +153,13 @@ final class MediaApiService
 		echo json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 	}
 
+	/**
+	 * Normalize a string value for case-insensitive comparison
+	 *
+	 * @param string $value String to normalize
+	 *
+	 * @return string Lowercased and trimmed string
+	 */
 	private function normalize(string $value): string
 	{
 		$value = trim($value);
@@ -114,11 +170,28 @@ final class MediaApiService
 		return strtolower($value);
 	}
 
+	/**
+	 * Extract non-empty string value or return null
+	 *
+	 * @param mixed $value Value to extract string from
+	 *
+	 * @return string|null Trimmed string or null if empty/invalid
+	 */
 	private function getStringValue($value): ?string
 	{
 		return is_string($value) && trim($value) !== '' ? trim($value) : null;
 	}
 
+	/**
+	 * Extract capture month-year from image metadata
+	 *
+	 * Attempts to extract YYYY-MM from EXIF DateTimeOriginal, DateTimeDigitized,
+	 * DateTime, or IPTC date_created fields.
+	 *
+	 * @param mixed $item Image metadata item
+	 *
+	 * @return string|null Month-year in YYYY-MM format or null if not found
+	 */
 	private function getCaptureMonthYear($item): ?string
 	{
 		if (!is_array($item)) {
@@ -126,6 +199,15 @@ final class MediaApiService
 		}
 
 		$exifCandidates = [
+			/**
+			 * Recursively lowercase all associative array keys
+			 *
+			 * Preserves numeric array indices but lowercases string keys.
+			 *
+			 * @param mixed $value Value to process (array, string, etc.)
+			 *
+			 * @return mixed Value with lowercased keys if array
+			 */
 			$item['exif']['EXIF']['DateTimeOriginal'] ?? null,
 			$item['exif']['EXIF']['DateTimeDigitized'] ?? null,
 			$item['exif']['IFD0']['DateTime'] ?? null,
