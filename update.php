@@ -16,38 +16,56 @@ require_once __DIR__ . '/functions.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-// Check for secret token
-$providedToken = $_GET['token'] ?? null;
-$validToken = getenv('UPDATE_TOKEN');
-if ($validToken === false || $validToken === '') {
-	$validToken = 'change_this_secret_token';
-}
-
-if ($providedToken === null || $providedToken === '') {
-	http_response_code(403);
-	echo json_encode([
-		'error' => 'forbidden',
-		'message' => 'Missing authentication token.',
-	]);
-	exit;
-}
-
-if ($providedToken !== $validToken) {
-	http_response_code(403);
-	echo json_encode([
-		'error' => 'forbidden',
-		'message' => 'Invalid authentication token.',
-	]);
-	exit;
-}
-
-// Only allow GET requests
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+// Only allow POST requests
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 	http_response_code(405);
-	header('Allow: GET');
+	header('Allow: POST');
 	echo json_encode([
 		'error' => 'method_not_allowed',
-		'message' => 'Only GET requests are allowed.',
+		'message' => 'Only POST requests are allowed.',
+	]);
+	exit;
+}
+
+// Validate webhook signature (GitHub-style authentication)
+$secret = getenv('UPDATE_TOKEN');
+if ($secret === false || $secret === '') {
+	$secret = 'change_this_secret_token';
+}
+
+// Get the signature from header
+$hubSignature = $_SERVER['HTTP_X_HUB_SIGNATURE_256'] ?? null;
+
+if ($hubSignature === null || $hubSignature === '') {
+	http_response_code(403);
+	echo json_encode([
+		'error' => 'forbidden',
+		'message' => 'Missing signature header (X-Hub-Signature-256).',
+	]);
+	exit;
+}
+
+// Get raw POST body
+$payload = file_get_contents('php://input');
+
+if ($payload === false) {
+	http_response_code(400);
+	echo json_encode([
+		'error' => 'bad_request',
+		'message' => 'Could not read request body.',
+	]);
+	exit;
+}
+
+// Compute expected signature
+$expectedSignature = 'sha256=' . hash_hmac('sha256', $payload, $secret);
+
+// Constant-time comparison to prevent timing attacks
+if (!hash_equals($expectedSignature, $hubSignature)) {
+	http_response_code(403);
+	echo json_encode([
+		'error' => 'forbidden',
+		'message' => 'Invalid signature.',
 	]);
 	exit;
 }

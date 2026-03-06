@@ -156,9 +156,9 @@ Possible error responses:
 
 The `/update` endpoint provides a way to pull the latest code from the git repository.
 
-**Endpoint:** `GET /update?token=YOUR_SECRET_TOKEN`
+**Endpoint:** `POST /update`
 
-**Authentication:** Requires a secret token passed as a query parameter.
+**Authentication:** Uses GitHub webhook-style HMAC-SHA256 signature validation. The request must include an `X-Hub-Signature-256` header containing the HMAC signature of the request body.
 
 **Configuration:**
 
@@ -188,9 +188,26 @@ Create a token at [GitHub Settings → Tokens](https://github.com/settings/token
 
 **Usage example:**
 
+Manual trigger with signature:
+
 ```bash
-curl "https://yourdomain.com/update?token=your_secret_token"
+# Generate signature
+PAYLOAD='{"action":"deploy"}'
+SECRET='your_secure_random_token'
+SIGNATURE="sha256=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" | sed 's/^.* //')"
+
+# Make request
+curl -X POST "https://yourdomain.com/update" \
+  -H "X-Hub-Signature-256: $SIGNATURE" \
+  -d "$PAYLOAD"
 ```
+
+For GitHub webhooks, configure the webhook in your repository settings:
+1. Go to Settings → Webhooks → Add webhook
+2. **Payload URL:** `https://yourdomain.com/update`
+3. **Content type:** `application/json`
+4. **Secret:** Your `UPDATE_TOKEN` value
+5. **Events:** Choose "Just the push event"
 
 **Response format:**
 
@@ -217,8 +234,8 @@ Failure (HTTP 500):
 ```
 
 Error responses:
-- `403` when token is missing or invalid
-- `405` when request method is not GET
+- `403` when signature is missing or invalid
+- `405` when request method is not POST
 - `500` when git pull fails or directory change fails (details logged to `logs/update-errors.log`)
 
 **Error logging:**
