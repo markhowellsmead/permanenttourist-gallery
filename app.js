@@ -125,6 +125,9 @@ function renderImages(images) {
         const li = document.createElement("li");
         li.className = "image-item";
 
+        const figure = document.createElement("figure");
+        figure.className = "image-figure";
+
         const img = document.createElement("img");
         img.src = item.url;
         img.alt = item.url;
@@ -153,7 +156,8 @@ function renderImages(images) {
         meta.appendChild(location);
         meta.appendChild(tags);
         meta.appendChild(date);
-        li.appendChild(img);
+        figure.appendChild(img);
+        li.appendChild(figure);
         li.appendChild(meta);
         list.appendChild(li);
     }
