@@ -29,7 +29,8 @@ $appJsUrl = AssetHelper::cacheBustedAsset('app.js');
 </head>
 
 <body>
-	<h1>Image List</h1>
+	<h1>Permanent Tourist photographic archive</h1>
+	<p>Photos by Mark Howells-Mead. (<a href="https://www.permanenttourist.ch/">Main website</a>)</p>
 	<div id="status">Loading…</div>
 	<ul id="image-list"></ul>
 
