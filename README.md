@@ -176,6 +176,16 @@ Generate a secure token:
 openssl rand -hex 32
 ```
 
+**GitHub authentication:**
+
+If your git remote uses SSH (`git@github.com:...`) and the web server user doesn't have SSH keys configured, you can provide a GitHub Personal Access Token:
+
+```dotenv
+GITHUB_TOKEN=your_github_personal_access_token
+```
+
+Create a token at [GitHub Settings → Tokens](https://github.com/settings/tokens) with `repo` scope. The update endpoint will automatically convert the SSH remote to HTTPS with token authentication during the pull operation, then restore the SSH remote URL.
+
 **Usage example:**
 
 ```bash
@@ -342,11 +352,13 @@ Edit `.env` and set your values:
 
 ```dotenv
 UPDATE_TOKEN=your_secure_random_token_here
+GITHUB_TOKEN=your_github_personal_access_token
 ```
 
 Available environment variables:
 
 - `UPDATE_TOKEN`: Secret token for the `/update` endpoint (required for security)
+- `GITHUB_TOKEN`: GitHub Personal Access Token for HTTPS authentication (optional, only needed if git remote uses SSH and web server user has no SSH keys)
 
 Generate a secure token:
 

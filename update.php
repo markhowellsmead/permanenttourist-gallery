@@ -83,7 +83,46 @@ if (!chdir($projectRoot)) {
 // Execute git pull
 $output = [];
 $exitCode = 0;
-exec('git pull 2>&1', $output, $exitCode);
+
+// Check if we need to use GitHub token for HTTPS authentication
+$githubToken = getenv('GITHUB_TOKEN');
+if ($githubToken !== false && $githubToken !== '') {
+	// Get current remote URL
+	exec('git remote get-url origin 2>&1', $remoteOutput, $remoteExitCode);
+	
+	if ($remoteExitCode === 0 && !empty($remoteOutput)) {
+		$remoteUrl = trim($remoteOutput[0]);
+		
+		// Check if remote is using SSH
+		if (preg_match('/^git@github\.com:(.+)\.git$/', $remoteUrl, $matches)) {
+			$repoPath = $matches[1];
+			$httpsUrl = "https://{$githubToken}@github.com/{$repoPath}.git";
+			
+			// Temporarily set remote to HTTPS with token
+			exec("git remote set-url origin '{$httpsUrl}' 2>&1", $setUrlOutput, $setUrlExitCode);
+			
+			if ($setUrlExitCode === 0) {
+				// Execute git pull with HTTPS
+				exec('git pull origin 2>&1', $output, $exitCode);
+				
+				// Restore SSH remote URL
+				exec("git remote set-url origin '{$remoteUrl}' 2>&1");
+			} else {
+				$output = array_merge(['Failed to set HTTPS remote URL'], $setUrlOutput);
+				$exitCode = $setUrlExitCode;
+			}
+		} else {
+			// Remote is already HTTPS or unknown format, use standard git pull
+			exec('git pull 2>&1', $output, $exitCode);
+		}
+	} else {
+		// Could not get remote URL, use standard git pull
+		exec('git pull 2>&1', $output, $exitCode);
+	}
+} else {
+	// No GitHub token, use standard git pull (requires SSH keys or HTTPS to be configured)
+	exec('git pull 2>&1', $output, $exitCode);
+}
 
 $timestamp = date('Y-m-d H:i:s');
 
