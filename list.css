@@ -57,6 +57,7 @@ h1 {
 	margin: var(--grid500-unit-small);
 	background-color: #f0f0f0;
 	position: relative;
+	overflow: hidden;
 }
 
 @media (min-width: 48rem) {
@@ -77,6 +78,7 @@ h1 {
 	height: 100%;
 	position: relative;
 	color: inherit;
+	overflow: hidden;
 	text-decoration: none;
 }
 
@@ -113,7 +115,7 @@ h1 {
 	z-index: 2;
 	display: grid;
 	gap: 0.2rem;
-	padding: 0.6rem;
+	padding: 1rem;
 	color: #fff;
 	background: linear-gradient(0deg, rgba(0, 0, 0, 0.75), transparent);
 	opacity: 0;
@@ -144,4 +146,40 @@ body.show-captions .meta {
 .meta .date {
 	font-size: 0.75rem;
 	opacity: 0.95;
+}
+
+.meta-secondary {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 2;
+	display: grid;
+	gap: 0.15rem;
+	padding: 1rem;
+	color: #fff;
+	font-size: 0.7rem;
+	background: linear-gradient(0deg, rgba(0, 0, 0, 0.6), transparent);
+	opacity: 1;
+	transform: translateY(0);
+	transition:
+		opacity 220ms ease,
+		transform 220ms ease;
+	pointer-events: none;
+}
+
+.c-grid500__itemlink:hover .meta-secondary,
+.c-grid500__itemlink:focus-within .meta-secondary,
+body.show-captions .meta-secondary {
+	opacity: 0;
+	transform: translateY(0.3rem);
+}
+
+.meta-secondary .date {
+	font-weight: 500;
+	opacity: 0.95;
+}
+
+.meta-secondary .location {
+	opacity: 0.85;
 }

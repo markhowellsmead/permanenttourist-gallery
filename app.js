@@ -208,7 +208,7 @@ function createCaptionSettingsPanel() {
 	checkbox.id = 'show-captions-checkbox';
 
 	label.appendChild(checkbox);
-	label.appendChild(document.createTextNode(' Keep image captions visible'));
+	label.appendChild(document.createTextNode(' Keep full image captions visible'));
 
 	const monthYearLabel = document.createElement('label');
 	monthYearLabel.setAttribute('for', 'month-year-filter-select');
@@ -534,10 +534,26 @@ function renderImages(images) {
 		meta.appendChild(location);
 		meta.appendChild(tags);
 		meta.appendChild(date);
+
+		const metaSecondary = document.createElement('div');
+		metaSecondary.className = 'meta-secondary';
+
+		const secondaryDate = document.createElement('div');
+		secondaryDate.className = 'date';
+		secondaryDate.textContent = formatTimestamp(item.captureTs);
+
+		const secondaryLocation = document.createElement('div');
+		secondaryLocation.className = 'location';
+		secondaryLocation.textContent = getImageLocation(item);
+
+		metaSecondary.appendChild(secondaryDate);
+		metaSecondary.appendChild(secondaryLocation);
+
 		figure.appendChild(img);
 		card.appendChild(uncollapse);
 		card.appendChild(figure);
 		card.appendChild(meta);
+		card.appendChild(metaSecondary);
 		li.appendChild(card);
 		list.appendChild(li);
 	}

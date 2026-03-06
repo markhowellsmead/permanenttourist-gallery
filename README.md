@@ -181,10 +181,21 @@ The settings panel is created dynamically in JavaScript (not server-rendered in 
 - Month/year options are generated from image capture dates and sent as `month_year=yyyy-mm`
 - Country/region options are generated from IPTC location metadata
 - The reset button clears both filters and is automatically hidden when no filters are active
-- Captions are hidden by default in CSS
-- Captions appear on image hover/focus with a transition
-- If `Show captions` is enabled, captions remain visible without hover
-- Checkbox state is persisted in `localStorage` using the key `gallery.showCaptions`
+
+### Caption behavior
+
+Each image has two caption states:
+
+- **Main caption** (title, location, tags, date):
+  - Hidden by default
+  - Appears on hover/focus with a smooth transition
+  - Remains visible when `Show captions` is enabled
+  - Checkbox state is persisted in `localStorage` using the key `gallery.showCaptions`
+
+- **Secondary caption** (date and location):
+  - Visible by default when main caption is not shown
+  - Automatically hidden on hover/focus or when `Show captions` is enabled
+  - Provides quick context without hovering
 
 ## Output data format
 
