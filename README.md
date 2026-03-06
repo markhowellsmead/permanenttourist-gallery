@@ -12,6 +12,7 @@ Main parts:
 - `list.php`: HTML shell for the list/grid UI with cache-busted assets
 - `app.js`: client-side data fetch, sorting, metadata extraction, and grid rendering
 - `list.css`: grid/layout styling
+- `404.css`: styling for the custom 404 page
 - `.htaccess`: rewrites non-JPG, non-CSS, non-JS requests to `index.php`
 
 ## Requirements
@@ -49,8 +50,8 @@ Example:
 
 ```json
 {
-  "iptc_key": "2#101",
-  "value": ["Austria"]
+	"iptc_key": "2#101",
+	"value": ["Austria"]
 }
 ```
 
@@ -72,8 +73,18 @@ Rules:
 - Only `GET` is allowed
 - Non-GET requests return HTTP `405` with `Allow: GET`
 - Reads `media/media.json`
-- Supports optional filtering via `country` query parameter (for example `/api?country=Scotland`)
+- Supports optional filtering via:
+    - `month_year` in `yyyy-mm` format (for example `/api?month_year=2024-03`)
+    - `country` (for example `/api?country=Scotland`)
+    - both together (for example `/api?country=Scotland&month_year=2017-09`)
 - Recursively lowercases all associative object keys before output
+
+Example filter combinations:
+
+- `/api`
+- `/api?month_year=2017-09`
+- `/api?country=Scotland`
+- `/api?country=Scotland&month_year=2017-09`
 
 Possible error responses:
 
@@ -91,7 +102,8 @@ Possible error responses:
 
 - `/api` and `/api/` → `api.php`
 - `/build` and `/build/` → `build.php`
-- any other dynamic path → `list.php`
+- `/` and `/?...` → `list.php`
+- any other dynamic path → `404.php`
 
 ## Frontend list/grid behavior
 
@@ -104,20 +116,20 @@ Possible error responses:
 
 1. Fetches `/api`
 2. Computes capture timestamp using EXIF fields first:
-   - `exif.exif.datetimeoriginal`
-   - `exif.exif.datetimedigitized`
-   - fallback: `exif.ifd0.datetime`
+    - `exif.exif.datetimeoriginal`
+    - `exif.exif.datetimedigitized`
+    - fallback: `exif.ifd0.datetime`
 3. Falls back to IPTC date/time when needed:
-   - `iptc.date_created.value[0]`
-   - `iptc.time_created.value[0]`
+    - `iptc.date_created.value[0]`
+    - `iptc.time_created.value[0]`
 4. Sorts images newest first
 5. Renders a flex-based calculated grid inspired by grid500 logic using:
-   - width: `exif.computed.width`
-   - height: `exif.computed.height`
-   - metrics:
-     - `flexGrow = width * 100 / height`
-     - `flexBasis = width * targetHeight / height`
-     - `paddingBottom = height / width * 100`
+    - width: `exif.computed.width`
+    - height: `exif.computed.height`
+    - metrics:
+        - `flexGrow = width * 100 / height`
+        - `flexBasis = width * targetHeight / height`
+        - `paddingBottom = height / width * 100`
 
 Rendered overlay content per image:
 
@@ -131,12 +143,12 @@ Rendered overlay content per image:
 The settings panel is created dynamically in JavaScript (not server-rendered in PHP).
 
 - A `Show captions` checkbox is inserted into the DOM by `app.js`
+- A `Month / year` select box is inserted into the DOM by `app.js`
 - A `Country / region` select box is inserted into the DOM by `app.js`
-- Changing the select value triggers a new API request and re-renders the grid
-- Filter options are populated from IPTC metadata:
-   - all non-UK entries contribute `country_primary_location_name`
-   - UK entries contribute regional terms from `state_province` / `sublocation`
-   - `United Kingdom` itself is intentionally hidden as a selectable option
+- Changing either select triggers a new API request and re-renders the grid
+- Both selectors work in tandem and are sent as query parameters (`month_year` + `country`)
+- Month/year options are generated from image capture dates and sent as `month_year=yyyy-mm`
+- Country/region options are generated from IPTC location metadata
 - Captions are hidden by default in CSS
 - Captions appear on image hover/focus with a transition
 - If `Show captions` is enabled, captions remain visible without hover
@@ -180,13 +192,13 @@ Expected: command succeeds and updates `media/media.json`.
 
 5. Verify static assets are direct-served:
 
-- Open `/list.css` and `/app.js`
-- Confirm both are served directly (not routed JSON/HTML output)
+- Open `/list.css`, `/404.css`, and `/app.js`
+- Confirm all are served directly (not routed JSON/HTML output)
 
 6. Verify front-controller routes:
 
 - Open `/build` to trigger rebuild endpoint
-- Open an unknown dynamic path (for example `/something-random`) and confirm list view fallback
+- Open an unknown dynamic path (for example `/something-random`) and confirm custom 404 page
 
 ## License
 
