@@ -23,7 +23,7 @@ $outputFile = $mediaDir . '/media.json';
 $sitemapFile = $rootDir . '/sitemap.xml';
 $siteUrl = getenv('SITE_URL');
 if ($siteUrl === false || $siteUrl === '') {
-	$siteUrl = 'https://gallery.permanenttourist.ch';
+	$siteUrl = '';
 }
 
 try {
