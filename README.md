@@ -38,8 +38,28 @@ What `build.php` does:
 2. Builds each image URL as `/media/<relative-path>`
 3. Extracts IPTC and EXIF metadata
 4. Normalizes metadata values for safe UTF-8 JSON output
-5. Sorts records by URL
-6. Writes `media/media.json`
+5. Compares against existing `media/media.json` to identify new images
+6. Sorts records by URL
+7. Writes `media/media.json`
+8. Logs newly added images to monthly log files in `logs/YYYY-MM.log`
+
+### Monthly image logging
+
+New images are tracked by comparing URLs against the previous JSON. Each new image is logged with a timestamp to `logs/YYYY-MM.log`:
+
+```
+[2026-03-06 14:30:45] Added: /media/2026/photo1.jpg
+[2026-03-06 14:30:45] Added: /media/2026/photo2.jpg
+```
+
+When new images are detected, the build script will report:
+
+```
+Wrote 11 image records to /path/to/media/media.json
+Logged 2 new image(s) to /path/to/logs/2026-03.log
+```
+
+If no new images are found (all images were already in the JSON), only the total count is reported and no log file is created/updated.
 
 ## IPTC transformation details
 

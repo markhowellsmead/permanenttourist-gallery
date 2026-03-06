@@ -12,11 +12,20 @@ final class MediaJsonBuilder
 {
 	public function build(string $mediaDir, string $outputFile): int
 	{
+		$result = $this->buildWithDetails($mediaDir, $outputFile);
+		return $result['total'];
+	}
+
+	public function buildWithDetails(string $mediaDir, string $outputFile): array
+	{
 		if (!is_dir($mediaDir)) {
 			throw new \RuntimeException("Media directory not found: {$mediaDir}");
 		}
 
+		$existingUrls = $this->getExistingUrls($outputFile);
+
 		$images = [];
+		$newUrls = [];
 		$iterator = new RecursiveIteratorIterator(
 			new RecursiveDirectoryIterator($mediaDir, FilesystemIterator::SKIP_DOTS)
 		);
@@ -34,6 +43,10 @@ final class MediaJsonBuilder
 			$absolutePath = $item->getPathname();
 			$relativePath = ltrim(str_replace($mediaDir, '', $absolutePath), DIRECTORY_SEPARATOR);
 			$url = '/media/' . str_replace(DIRECTORY_SEPARATOR, '/', $relativePath);
+
+			if (!in_array($url, $existingUrls, true)) {
+				$newUrls[] = $url;
+			}
 
 			$images[] = [
 				'url' => $url,
@@ -57,7 +70,62 @@ final class MediaJsonBuilder
 			throw new \RuntimeException("Failed to write output file: {$outputFile}");
 		}
 
-		return count($images);
+		if (!empty($newUrls)) {
+			$this->logNewImages($newUrls, $mediaDir);
+		}
+
+		return [
+			'total' => count($images),
+			'new' => count($newUrls),
+		];
+	}
+
+	private function getExistingUrls(string $outputFile): array
+	{
+		if (!file_exists($outputFile)) {
+			return [];
+		}
+
+		$content = @file_get_contents($outputFile);
+		if ($content === false) {
+			return [];
+		}
+
+		$data = @json_decode($content, true);
+		if (!is_array($data)) {
+			return [];
+		}
+
+		$urls = [];
+		foreach ($data as $item) {
+			if (isset($item['url']) && is_string($item['url'])) {
+				$urls[] = $item['url'];
+			}
+		}
+
+		return $urls;
+	}
+
+	private function logNewImages(array $newUrls, string $mediaDir): void
+	{
+		$logsDir = dirname($mediaDir) . '/logs';
+		if (!is_dir($logsDir)) {
+			if (!@mkdir($logsDir, 0755, true)) {
+				return;
+			}
+		}
+
+		$monthKey = date('Y-m');
+		$logFile = $logsDir . '/' . $monthKey . '.log';
+		$timestamp = date('Y-m-d H:i:s');
+
+		$logEntries = [];
+		foreach ($newUrls as $url) {
+			$logEntries[] = "[{$timestamp}] Added: {$url}";
+		}
+
+		$logContent = implode(PHP_EOL, $logEntries) . PHP_EOL;
+		@file_put_contents($logFile, $logContent, FILE_APPEND | LOCK_EX);
 	}
 
 	private function normalizeValue($value)

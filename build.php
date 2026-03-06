@@ -12,8 +12,15 @@ $outputFile = $mediaDir . '/media.json';
 
 try {
 	$builder = new MediaJsonBuilder();
-	$imageCount = $builder->build($mediaDir, $outputFile);
-	echo "Wrote {$imageCount} image records to {$outputFile}\n";
+	$result = $builder->buildWithDetails($mediaDir, $outputFile);
+
+	echo "Wrote {$result['total']} image records to {$outputFile}\n";
+
+	if ($result['new'] > 0) {
+		$monthKey = date('Y-m');
+		$logFile = __DIR__ . "/logs/{$monthKey}.log";
+		echo "Logged {$result['new']} new image(s) to {$logFile}\n";
+	}
 } catch (Throwable $throwable) {
 	fwrite(STDERR, $throwable->getMessage() . "\n");
 	exit(1);

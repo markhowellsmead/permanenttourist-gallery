@@ -1,5 +1,7 @@
 /media/*
 !/media/.gitkeep
+/logs/*
+!/logs/.gitkeep
 *.json
 .DS_Store
 fromlive.sh
