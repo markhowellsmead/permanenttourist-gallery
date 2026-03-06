@@ -806,6 +806,13 @@ function showDetailView(photoId) {
 	detailView.appendChild(imageContainer);
 	detailView.appendChild(caption);
 
+	// Allow closing by clicking on the overlay background
+	detailView.addEventListener('click', (e) => {
+		if (e.target === detailView) {
+			navigateToList();
+		}
+	});
+
 	detailView.hidden = false;
 	document.body.style.overflow = 'hidden';
 
