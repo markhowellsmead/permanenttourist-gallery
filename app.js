@@ -709,6 +709,30 @@ function clearDetailViewMetaTags() {
 	dynamicTags.forEach((tag) => tag.remove());
 }
 
+function markServerRenderedMetaTagsAsDynamic() {
+	// Mark server-rendered meta tags so they can be managed by JavaScript
+	const selectors = [
+		'link[rel="canonical"]',
+		'meta[property="og:title"]',
+		'meta[property="og:description"]',
+		'meta[property="og:image"]',
+		'meta[property="og:url"]',
+		'meta[property="og:type"]',
+		'meta[property="og:site_name"]',
+		'meta[name="twitter:card"]',
+		'meta[name="twitter:title"]',
+		'meta[name="twitter:description"]',
+		'meta[name="twitter:image"]',
+	];
+
+	selectors.forEach((selector) => {
+		const element = document.querySelector(selector);
+		if (element && !element.dataset.dynamicMeta) {
+			element.dataset.dynamicMeta = 'true';
+		}
+	});
+}
+
 function showDetailView(photoId) {
 	const image = findImageByPhotoId(photoId);
 	if (!image) {
@@ -829,8 +853,8 @@ window.addEventListener('keydown', (event) => {
 document.addEventListener('DOMContentLoaded', () => {
 	const route = getCurrentRoute();
 	if (route.type === 'photo') {
-		// We need to wait for images to load before showing detail view
-		// The detail view will be shown after data loads
+		// Mark any server-rendered meta tags so they can be managed by JavaScript
+		markServerRenderedMetaTagsAsDynamic();
 	}
 });
 

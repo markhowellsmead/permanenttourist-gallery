@@ -318,6 +318,13 @@ fatal: not a git repository
 - `list.css?v=<filemtime>`
 - `app.js?v=<filemtime>`
 
+**SEO meta tags:**
+
+The HTML includes a sitemap reference in the `<head>`:
+```html
+<link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml">
+```
+
 `app.js` behavior:
 
 1. Fetches `/api` (receives flattened data structure)
@@ -360,6 +367,11 @@ The gallery operates as a single-page application with client-side routing:
 - Close button returns to list view
 - Escape key closes detail view
 - Browser back/forward buttons work correctly
+- Dynamic SEO meta tags:
+  - Canonical link pointing to the photo's permanent URL
+  - Open Graph tags (`og:title`, `og:description`, `og:image`, `og:url`, `og:type`, `og:site_name`)
+  - Twitter Card tags (`twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`)
+  - All meta tags are dynamically created when showing detail view and removed when closing
 
 **URL routing:**
 - List view: `/`
