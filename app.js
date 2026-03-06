@@ -117,20 +117,67 @@ function getImageTags(item) {
     return cleanTags.join(", ");
 }
 
+function getImageDimensions(item) {
+    const width = Number(getByPath(item, ["exif", "computed", "width"]));
+    const height = Number(getByPath(item, ["exif", "computed", "height"]));
+
+    if (
+        !Number.isFinite(width) ||
+        !Number.isFinite(height) ||
+        width <= 0 ||
+        height <= 0
+    ) {
+        return {
+            width: 3,
+            height: 2,
+        };
+    }
+
+    return {
+        width,
+        height,
+    };
+}
+
+function getGridMetrics(item, targetHeight) {
+    const dimensions = getImageDimensions(item);
+    const width = dimensions.width;
+    const height = dimensions.height;
+
+    return {
+        flexGrow: (width * 100) / height,
+        flexBasis: (width * targetHeight) / height,
+        paddingBottom: (height / width) * 100,
+    };
+}
+
 function renderImages(images) {
     const list = document.getElementById("image-list");
     list.innerHTML = "";
+    const targetHeight = 320;
 
     for (const item of images) {
         const li = document.createElement("li");
-        li.className = "image-item";
+        li.className = "image-item c-grid500__item";
+
+        const metrics = getGridMetrics(item, targetHeight);
+        li.style.flexGrow = String(metrics.flexGrow);
+        li.style.flexBasis = `${metrics.flexBasis}px`;
+
+        const card = document.createElement("div");
+        card.className = "c-grid500__itemlink";
+
+        const uncollapse = document.createElement("i");
+        uncollapse.className = "c-grid500__uncollapse";
+        uncollapse.style.paddingBottom = `${metrics.paddingBottom}%`;
 
         const figure = document.createElement("figure");
-        figure.className = "image-figure";
+        figure.className = "c-grid500__figure";
 
         const img = document.createElement("img");
+        img.className = "c-grid500__image";
         img.src = item.url;
-        img.alt = item.url;
+        img.alt = getImageTitle(item);
         img.loading = "lazy";
 
         const meta = document.createElement("div");
@@ -157,8 +204,10 @@ function renderImages(images) {
         meta.appendChild(tags);
         meta.appendChild(date);
         figure.appendChild(img);
-        li.appendChild(figure);
-        li.appendChild(meta);
+        card.appendChild(uncollapse);
+        card.appendChild(figure);
+        card.appendChild(meta);
+        li.appendChild(card);
         list.appendChild(li);
     }
 }
