@@ -182,6 +182,19 @@ Examples using the readable path form:
 - `/api/filter/location/austria/month_year/2024-03/`
 - `/api/filter/month_year/2017-09/location/scotland/`
 
+Canonical URLs and redirects:
+
+- The API enforces a canonical, lowercased, and consistently-encoded form for readable filter paths. If a request arrives with mixed-case segments or alternative encodings, `api.php` will respond with a `301` redirect to the canonical form.
+- Canonical rules:
+  - keys and values are lowercased (for example `Austria` → `austria`).
+  - `country` and `location` are normalized to the friendly key `location` in the canonical path.
+  - spaces are represented as `+` and other special characters are percent-encoded (for example `München` → `m%C3%BCnchen`).
+
+Examples of redirects performed by the API:
+
+- `/api/filter/location/Austria/` → `/api/filter/location/austria/` (301)
+- `/api/filter/Country/Spiez%20Valley/` → `/api/filter/location/spiez+valley/` (301)
+
 ### Flattened API response structure
 
 Each image in the API response has these top-level fields:

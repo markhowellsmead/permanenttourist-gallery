@@ -36,6 +36,52 @@ $fullPath = '/' . $path;
 $pos = strpos($fullPath, $filterPrefix);
 
 if ($pos !== false) {
+	// Build a canonical form of the filter path (lowercased keys/values, spaces -> +)
+	$afterRaw = substr($fullPath, $pos + strlen($filterPrefix));
+	$afterRaw = trim($afterRaw, '/');
+	if ($afterRaw !== '') {
+		$pairsRaw = explode('/', $afterRaw);
+		$canonicalParts = [];
+		for ($i = 0; $i < count($pairsRaw); $i += 2) {
+			$kRaw = $pairsRaw[$i] ?? null;
+			$vRaw = $pairsRaw[$i + 1] ?? null;
+			if ($kRaw === null || $vRaw === null) {
+				continue;
+			}
+
+			$kDecoded = urldecode($kRaw);
+			$vDecoded = urldecode($vRaw);
+
+			$kCanon = strtolower($kDecoded);
+			// use friendly 'location' key for country
+			if ($kCanon === 'country') {
+				$kCanon = 'location';
+			}
+
+			$vCanon = strtolower($vDecoded);
+			// urlencode yields application/x-www-form-urlencoded encoding (spaces -> +)
+			$vEncoded = urlencode($vCanon);
+
+			$canonicalParts[] = $kCanon;
+			$canonicalParts[] = $vEncoded;
+		}
+
+		if (!empty($canonicalParts)) {
+			$prefix = substr($fullPath, 0, $pos);
+			$canonicalFull = rtrim($prefix, '/') . $filterPrefix . implode('/', $canonicalParts) . '/';
+
+			// If requested path differs from canonical, redirect (preserve query string)
+			if ($canonicalFull !== $fullPath) {
+				$query = parse_url($uri, PHP_URL_QUERY);
+				$location = $canonicalFull;
+				if ($query !== null && $query !== '') {
+					$location .= '?' . $query;
+				}
+				header('Location: ' . $location, true, 301);
+				exit;
+			}
+		}
+	}
 	$after = substr($fullPath, $pos + strlen($filterPrefix));
 	$after = trim($after, '/');
 	if ($after !== '') {
