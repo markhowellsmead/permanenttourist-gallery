@@ -237,6 +237,7 @@ Possible error responses:
 - `/api` and `/api/` → `api.php`
 - `/build` and `/build/` → `build.php`
 - `/update` and `/update/` → `update.php`
+- `/fetch-from-email` and `/fetch-from-email/` → `fetch-from-email.php`
 - `/sitemap` and `/sitemap/` → `sitemap.php`
 - `/` and `/?...` → `list.php`
 - any other dynamic path → `404.php`

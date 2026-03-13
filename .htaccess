@@ -25,6 +25,7 @@ RewriteRule ^build/?$ index.php [L,QSA]
 RewriteRule ^update/?$ index.php [L,QSA]
 RewriteRule ^sitemap/?$ index.php [L,QSA]
 RewriteRule ^photo/[^/]+/?$ index.php [L,QSA]
+RewriteRule ^fetch-from-email/?$ fetch-from-email.php [L,QSA]
 
 # Everything else should render the custom 404 page
 RewriteRule ^ 404.php [L]
