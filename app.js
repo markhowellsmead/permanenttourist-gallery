@@ -879,6 +879,16 @@ document.addEventListener('DOMContentLoaded', () => {
 		// Mark any server-rendered meta tags so they can be managed by JavaScript
 		markServerRenderedMetaTagsAsDynamic();
 	}
+
+	// Log application version from meta tag if present
+	try {
+		const versionMeta = document.querySelector('meta[name="app-version"]');
+		if (versionMeta && versionMeta.content) {
+			console.info('Gallery version:', versionMeta.content);
+		}
+	} catch (e) {
+		// Non-fatal
+	}
 });
 
 initSettingsPanel();

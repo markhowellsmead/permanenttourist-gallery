@@ -2,6 +2,8 @@
 
 This project scans JPEG images in `media/`, extracts IPTC and EXIF metadata, writes a JSON index, and serves a browser-based gallery view that loads data from a REST-style API.
 
+Version: 20260313-135411
+
 ## Overview
 
 Main parts:

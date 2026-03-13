@@ -81,6 +81,17 @@ if ($photoData !== null && $photoId !== null) {
 	<title><?php echo htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8'); ?></title>
 	<link rel="stylesheet" href="<?php echo htmlspecialchars($listCssUrl, ENT_QUOTES, 'UTF-8'); ?>">
 	<link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml">
+	<?php
+	// Expose application version from README 'Version:' line
+	$readmeFile = __DIR__ . '/README.md';
+	if (is_readable($readmeFile)) {
+		$readme = @file_get_contents($readmeFile);
+		if ($readme !== false && preg_match('/^Version:\s*(.+)$/mi', $readme, $m)) {
+			$version = trim($m[1]);
+			echo '<meta name="app-version" content="' . htmlspecialchars($version, ENT_QUOTES, 'UTF-8') . '">';
+		}
+	}
+	?>
 	<?php if ($canonicalUrl !== null): ?>
 		<link rel="canonical" href="<?php echo htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8'); ?>">
 	<?php endif; ?>
