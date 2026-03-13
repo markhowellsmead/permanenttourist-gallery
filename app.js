@@ -430,15 +430,31 @@ function populateCountryFilterOptions(items) {
 }
 
 async function fetchImageData(monthYear = '', country = '') {
-	const url = new URL('/api', window.location.origin);
-	if (monthYear !== '') {
-		url.searchParams.set('month_year', monthYear);
-	}
-	if (country !== '') {
-		url.searchParams.set('country', country);
+	let requestUrl;
+	const origin = window.location.origin;
+
+	// Use readable path when filters are provided: /api/filter/location/<value>/month_year/<yyyy-mm>/
+	if (monthYear === '' && country === '') {
+		requestUrl = `${origin}/api`;
+	} else {
+		const parts = ['api', 'filter'];
+
+		if (country !== '') {
+			// Use application/x-www-form-urlencoded style for spaces (+)
+			const encodedCountry = encodeURIComponent(String(country).toLowerCase()).replace(/%20/g, '+');
+			parts.push('location', encodedCountry);
+		}
+
+		if (monthYear !== '') {
+			// monthYear is numeric-like (YYYY-MM) but normalize and percent-encode anyway
+			const encodedMonthYear = encodeURIComponent(String(monthYear).toLowerCase()).replace(/%20/g, '+');
+			parts.push('month_year', encodedMonthYear);
+		}
+
+		requestUrl = `${origin}/${parts.join('/')}/`;
 	}
 
-	const response = await fetch(url.toString(), {
+	const response = await fetch(requestUrl, {
 		method: 'GET',
 	});
 

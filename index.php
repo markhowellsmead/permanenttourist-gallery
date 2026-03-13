@@ -21,9 +21,9 @@ if ($path === '') {
 	$path = '/';
 }
 
-if ($path === '/api') {
-	require __DIR__ . '/api.php';
-	exit;
+if ($path === '/api' || str_starts_with($path, '/api/')) {
+    require __DIR__ . '/api.php';
+    exit;
 }
 
 if ($path === '/build') {

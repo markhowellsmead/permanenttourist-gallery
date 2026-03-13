@@ -11,6 +11,9 @@ RewriteRule ^media/ / [R=302,L]
 RewriteRule ^functions\.php$ - [F,L,NC]
 RewriteRule ^src/ - [F,L,NC]
 
+# Route API requests (including readable filter URLs) to api.php
+RewriteRule ^api(?:/.*)?$ api.php [L,QSA]
+
 # Serve existing files and directories directly
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
@@ -18,7 +21,6 @@ RewriteRule ^ - [L]
 
 # Allow only these application routes
 RewriteRule ^$ index.php [L,QSA]
-RewriteRule ^api/?$ index.php [L,QSA]
 RewriteRule ^build/?$ index.php [L,QSA]
 RewriteRule ^update/?$ index.php [L,QSA]
 RewriteRule ^sitemap/?$ index.php [L,QSA]
