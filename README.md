@@ -2,7 +2,7 @@
 
 This project scans JPEG images in `media/`, extracts IPTC and EXIF metadata, writes a JSON index, and serves a browser-based gallery view that loads data from a REST-style API.
 
-Version: 20260313-135411
+Version: 20260313-143341
 
 ## Overview
 
@@ -167,26 +167,26 @@ Example filter combinations:
 You can also use the readable path form for the year filter. Examples:
 
 - `/api?year=2024`
-- `/api/filter/year/2024/`
-- `/api/filter/location/austria/year/2024/`
+- `/api/filter/year/2024`
+- `/api/filter/location/austria/year/2024`
 
 The API also accepts readable, SEO-friendly filter URLs as an alternative to query parameters. These are routed to `api.php` and parsed into the same internal filters. Rules for the readable paths:
 
 - Path form: `/api/filter/<key>/<value>/[<key>/<value>/...]`
 - Friendly key names supported: `location` (maps to `country`) and `month_year`.
-- Values are matched case-insensitively; the client emits lowercase segments by default (for example `/api/filter/location/austria/`).
-- Spaces are encoded as `+` and other special characters are percent-encoded by the client (for example `/api/filter/location/spiez+valley/` or `/api/filter/location/m%C3%BCnchen/`).
+- Values are matched case-insensitively; the client emits lowercase segments by default (for example `/api/filter/location/austria`).
+- Spaces are encoded as `+` and other special characters are percent-encoded by the client (for example `/api/filter/location/spiez+valley` or `/api/filter/location/m%C3%BCnchen`).
 - Query parameters remain supported for backward compatibility.
 
 Examples using the readable path form:
 
-- `/api/filter/location/austria/`
-- `/api/filter/location/austria/month_year/2024-03/`
-- `/api/filter/month_year/2017-09/location/scotland/`
+- `/api/filter/location/austria`
+- `/api/filter/location/austria/month_year/2024-03`
+- `/api/filter/month_year/2017-09/location/scotland`
 
 Canonical URLs and redirects:
 
-- The API enforces a canonical, lowercased, and consistently-encoded form for readable filter paths. If a request arrives with mixed-case segments or alternative encodings, `api.php` will respond with a `301` redirect to the canonical form.
+- The API enforces a canonical, lowercased, and consistently-encoded form for readable filter paths. If a request arrives with mixed-case segments or alternative encodings, `api.php` will respond with a `301` redirect to the canonical form. The canonical form does not force a trailing slash — paths are normalized without adding or requiring a trailing `/`.
 - Canonical rules:
   - keys and values are lowercased (for example `Austria` → `austria`).
   - `country` and `location` are normalized to the friendly key `location` in the canonical path.
@@ -194,8 +194,8 @@ Canonical URLs and redirects:
 
 Examples of redirects performed by the API:
 
-- `/api/filter/location/Austria/` → `/api/filter/location/austria/` (301)
-- `/api/filter/Country/Spiez%20Valley/` → `/api/filter/location/spiez+valley/` (301)
+  - `/api/filter/location/Austria` → `/api/filter/location/austria` (301)
+  - `/api/filter/Country/Spiez%20Valley` → `/api/filter/location/spiez+valley` (301)
 
 ### Flattened API response structure
 
