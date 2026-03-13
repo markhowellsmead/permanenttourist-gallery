@@ -22,8 +22,8 @@ if ($path === '') {
 }
 
 if ($path === '/api' || str_starts_with($path, '/api/')) {
-    require __DIR__ . '/api.php';
-    exit;
+	require __DIR__ . '/api.php';
+	exit;
 }
 
 if ($path === '/build') {
@@ -33,6 +33,11 @@ if ($path === '/build') {
 
 if ($path === '/update') {
 	require __DIR__ . '/update.php';
+	exit;
+}
+
+if ($path === '/fetch-from-email') {
+	require __DIR__ . '/fetch-from-email.php';
 	exit;
 }
 

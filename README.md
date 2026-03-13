@@ -432,6 +432,38 @@ The settings panel is created dynamically in JavaScript (not server-rendered in 
 - Changing either select triggers a new API request and re-renders the grid
 - Both selectors work in tandem and are sent as query parameters (`month_year` + `country`)
 - Month/year options are generated from image capture dates and sent as `month_year=yyyy-mm`
+
+## Fetching images from email
+
+The application can fetch image attachments directly from an IMAP mailbox and save them into the `media/` folder.
+
+Endpoint:
+
+- `GET /fetch-from-email`
+
+Behavior:
+
+- Reads IMAP configuration from environment variables (or `.env`):
+  - `IMAP_HOST` (required)
+  - `IMAP_PORT` (optional; defaults to `993` for SSL and `143` otherwise)
+  - `IMAP_USER` (required)
+  - `IMAP_PASS` (required)
+  - `IMAP_MAILBOX` (optional; defaults to `INBOX`)
+  - `IMAP_ENCRYPTION` (optional; `ssl` or `tls`; defaults to `ssl`)
+- Connects to the configured mailbox and iterates all messages.
+- Downloads any attachments whose MIME type starts with `image/` into the `media/` directory, overwriting files with the same name.
+- Any message from which at least one attachment was saved will be deleted from the mailbox and expunged.
+- Returns JSON with arrays `downloaded` (filenames saved) and `deleted` (message numbers removed), plus any `errors`.
+
+Notes:
+
+- This endpoint requires the PHP `imap` extension.
+- The endpoint is intentionally `GET`-driven so it can be invoked by a cron job or manual request; secure access control (IP restriction, authentication) is recommended for production use.
+
+- Filenames: downloaded image attachments will be inspected for capture date (EXIF/IPTC). If a date is found the file will be renamed to be prefixed with `YYYYMMDD-` unless the original filename already begins with an 8-digit date. Example: `DSC0001.jpg` → `20240312-DSC0001.jpg`.
+- Overwrite behaviour: when renaming/prefixing, any existing file with the same final name will be overwritten.
+- Email deletion: emails that had attachments saved are deleted and expunged from the mailbox; consider running the endpoint in a protected environment or enabling a dry-run mode if you need to validate first.
+
 - Country/region options are generated from IPTC location metadata
 - The reset button clears both filters and is automatically hidden when no filters are active
 
