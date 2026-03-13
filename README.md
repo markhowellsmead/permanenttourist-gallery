@@ -151,6 +151,7 @@ Rules:
 - Flattens nested IPTC/EXIF structure into simple top-level properties
 - Supports optional filtering via:
     - `month_year` in `yyyy-mm` format (for example `/api?month_year=2024-03`)
+  - `year` in `yyyy` format (for example `/api?year=2024`)
     - `country` (for example `/api?country=Scotland`)
     - both together (for example `/api?country=Scotland&month_year=2017-09`)
 
@@ -160,6 +161,26 @@ Example filter combinations:
 - `/api?month_year=2017-09`
 - `/api?country=Scotland`
 - `/api?country=Scotland&month_year=2017-09`
+
+You can also use the readable path form for the year filter. Examples:
+
+- `/api?year=2024`
+- `/api/filter/year/2024/`
+- `/api/filter/location/austria/year/2024/`
+
+The API also accepts readable, SEO-friendly filter URLs as an alternative to query parameters. These are routed to `api.php` and parsed into the same internal filters. Rules for the readable paths:
+
+- Path form: `/api/filter/<key>/<value>/[<key>/<value>/...]`
+- Friendly key names supported: `location` (maps to `country`) and `month_year`.
+- Values are matched case-insensitively; the client emits lowercase segments by default (for example `/api/filter/location/austria/`).
+- Spaces are encoded as `+` and other special characters are percent-encoded by the client (for example `/api/filter/location/spiez+valley/` or `/api/filter/location/m%C3%BCnchen/`).
+- Query parameters remain supported for backward compatibility.
+
+Examples using the readable path form:
+
+- `/api/filter/location/austria/`
+- `/api/filter/location/austria/month_year/2024-03/`
+- `/api/filter/month_year/2017-09/location/scotland/`
 
 ### Flattened API response structure
 

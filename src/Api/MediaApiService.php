@@ -127,6 +127,27 @@ final class MediaApiService
 			}));
 		}
 
+		// Support year-only filter (YYYY)
+		$yearFilter = trim((string) ($queryParams['year'] ?? ''));
+		if ($yearFilter !== '') {
+			if (preg_match('/^\d{4}$/', $yearFilter) !== 1) {
+				$this->sendJson(400, [
+					'error' => 'invalid_year',
+					'message' => 'year must be in yyyy format.',
+				]);
+				return;
+			}
+
+			$data = array_values(array_filter($data, function ($item) use ($yearFilter): bool {
+				$my = $this->getCaptureMonthYear($item);
+				if ($my === null) {
+					return false;
+				}
+
+				return str_starts_with($my, $yearFilter . '-');
+			}));
+		}
+
 		$data = $this->flattenImageData($data);
 		echo json_encode(
 			$data,
