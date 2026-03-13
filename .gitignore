@@ -8,3 +8,4 @@ fromlive.sh
 .env
 sitemap.xml
 *sitemap.xml
+/get-media.sh
