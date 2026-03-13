@@ -68,7 +68,9 @@ if ($pos !== false) {
 
 		if (!empty($canonicalParts)) {
 			$prefix = substr($fullPath, 0, $pos);
-			$canonicalFull = rtrim($prefix, '/') . $filterPrefix . implode('/', $canonicalParts) . '/';
+			// Build canonical without forcing a trailing slash so comparisons
+			// against the normalized request path don't always differ.
+			$canonicalFull = rtrim($prefix, '/') . $filterPrefix . implode('/', $canonicalParts);
 
 			// If requested path differs from canonical, redirect (preserve query string)
 			if ($canonicalFull !== $fullPath) {
