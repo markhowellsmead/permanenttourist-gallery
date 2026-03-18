@@ -2,7 +2,7 @@
 
 This project scans JPEG images in `media/`, extracts IPTC and EXIF metadata, writes a JSON index, and serves a browser-based gallery view that loads data from a REST-style API.
 
-Version: 20260318-230400
+Version: 20260318-232240
 
 ## Overview
 
@@ -215,7 +215,7 @@ Each image in the API response has these top-level fields:
 - `datetime_original`: EXIF DateTimeOriginal timestamp
 - `datetime_digitized`: EXIF DateTimeDigitized timestamp
 - `datetime`: EXIF DateTime timestamp
-  
+
 Note: The API response formats EXIF and IPTC date/time values as `YYYY-MM-DD HH:MM:SS`. The underlying `media/media.json` remains unchanged.
 - `width`: image width in pixels
 - `height`: image height in pixels
