@@ -15,6 +15,13 @@ require_once __DIR__ . '/functions.php';
 
 use PT\Gallery\Api\MediaApiService;
 
+// Ensure API responses are not cached by clients or intermediate proxies
+// (also keeps canonical redirect responses uncached).
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
+
+
 $jsonFile = __DIR__ . '/media/media.json';
 
 $service = new MediaApiService();

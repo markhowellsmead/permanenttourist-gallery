@@ -246,11 +246,16 @@ Possible error responses:
 
 - `.htaccess` config sets a 7-day caching policy for frontend assets (CSS, JS, images and SVG) using `Expires` and `Cache-Control` headers. Static assets (for example `.css`, `.js`, `.jpg`, `.png`, `.webp`, `.avif`, `.svg`) receive `Cache-Control: public, max-age=604800, immutable` and a corresponding `Expires` header. HTML files receive a `public, max-age=604800` header.
 
+- `.htaccess` config sets a 7-day caching policy for frontend assets (CSS, JS, images and SVG) using `Expires` and `Cache-Control` headers. Static assets (for example `.css`, `.js`, `.jpg`, `.png`, `.webp`, `.avif`, `.svg`) receive `Cache-Control: public, max-age=604800, immutable` and a corresponding `Expires` header. HTML files receive a `public, max-age=604800` header.
+
+- The `/api` endpoint is excluded from caching and is served with `Cache-Control: no-store, no-cache, must-revalidate, max-age=0` and `Pragma: no-cache` to ensure clients always receive fresh JSON.
+
 - To verify headers from the server, run:
 
 ```bash
 curl -I https://yourdomain.com/app.js
 curl -I https://yourdomain.com/list.css
+curl -I https://yourdomain.com/api
 curl -I https://yourdomain.com/
 ```
 

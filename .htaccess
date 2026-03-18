@@ -1,6 +1,9 @@
 RewriteEngine On
 
-# 7-day caching for frontend assets
+# Don't cache the API responses
+SetEnvIf Request_URI "^/api(?:/.*)?$" NO_CACHE=1
+
+# 7-day caching for frontend assets (exclude API via `NO_CACHE` env)
 <IfModule mod_expires.c>
 	ExpiresActive On
 	ExpiresDefault "access plus 7 days"
@@ -18,13 +21,20 @@ RewriteEngine On
 </IfModule>
 
 <IfModule mod_headers.c>
+	# Caching for static assets only
 	<FilesMatch "\.(css|js|jpg|jpeg|png|gif|webp|avif|svg)$">
-		Header set Cache-Control "public, max-age=604800, immutable"
+		Header set Cache-Control "public, max-age=604800, immutable" env=!NO_CACHE
 	</FilesMatch>
 	<FilesMatch "\.(html|htm)$">
-		Header set Cache-Control "public, max-age=604800"
+		Header set Cache-Control "public, max-age=604800" env=!NO_CACHE
 	</FilesMatch>
+
+	# Explicitly disable caching for API endpoints
+	Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0" env=NO_CACHE
+	Header set Pragma "no-cache" env=NO_CACHE
+	Header unset Expires env=NO_CACHE
 </IfModule>
+
 # Redirect non-image requests in /media to the site root
 RewriteRule ^media/?$ / [R=302,L]
 
