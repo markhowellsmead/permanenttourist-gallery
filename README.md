@@ -209,10 +209,14 @@ Each image in the API response has these top-level fields:
 - `state_province`: state/province from IPTC
 - `date_created`: IPTC date in YYYYMMDD format
 - `time_created`: IPTC time in HHMMSS format
+- `date_created`: IPTC capture timestamp formatted as `YYYY-MM-DD HH:MM:SS` (combined date+time when available)
+- `time_created`: Same as `date_created` (timestamp preserved for compatibility)
 - `keywords`: array of keyword strings from IPTC
 - `datetime_original`: EXIF DateTimeOriginal timestamp
 - `datetime_digitized`: EXIF DateTimeDigitized timestamp
 - `datetime`: EXIF DateTime timestamp
+  
+Note: The API response formats EXIF and IPTC date/time values as `YYYY-MM-DD HH:MM:SS`. The underlying `media/media.json` remains unchanged.
 - `width`: image width in pixels
 - `height`: image height in pixels
 

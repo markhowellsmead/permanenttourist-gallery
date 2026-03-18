@@ -201,8 +201,13 @@ final class MediaApiService
 				$flat['sublocation'] = $this->extractIptcValue($item['iptc'], 'sublocation');
 				$flat['city'] = $this->extractIptcValue($item['iptc'], 'city');
 				$flat['state_province'] = $this->extractIptcValue($item['iptc'], 'state_province');
-				$flat['date_created'] = $this->extractIptcValue($item['iptc'], 'date_created');
-				$flat['time_created'] = $this->extractIptcValue($item['iptc'], 'time_created');
+
+				// IPTC date/time: present as combined formatted timestamp if possible
+				$rawIptcDate = $this->extractIptcValue($item['iptc'], 'date_created');
+				$rawIptcTime = $this->extractIptcValue($item['iptc'], 'time_created');
+				$formattedIptc = $this->formatIptcDateTime($rawIptcDate, $rawIptcTime);
+				$flat['date_created'] = $formattedIptc ?? $rawIptcDate;
+				$flat['time_created'] = $formattedIptc ?? $rawIptcTime;
 
 				// Keywords array (preserve as array)
 				$keywords = $this->extractIptcArray($item['iptc'], 'keywords');
@@ -213,9 +218,9 @@ final class MediaApiService
 
 			// Extract EXIF values
 			if (isset($item['exif']) && is_array($item['exif'])) {
-				$flat['datetime_original'] = $item['exif']['EXIF']['DateTimeOriginal'] ?? null;
-				$flat['datetime_digitized'] = $item['exif']['EXIF']['DateTimeDigitized'] ?? null;
-				$flat['datetime'] = $item['exif']['IFD0']['DateTime'] ?? null;
+				$flat['datetime_original'] = $this->formatExifDateString($item['exif']['EXIF']['DateTimeOriginal'] ?? null) ?? ($item['exif']['EXIF']['DateTimeOriginal'] ?? null);
+				$flat['datetime_digitized'] = $this->formatExifDateString($item['exif']['EXIF']['DateTimeDigitized'] ?? null) ?? ($item['exif']['EXIF']['DateTimeDigitized'] ?? null);
+				$flat['datetime'] = $this->formatExifDateString($item['exif']['IFD0']['DateTime'] ?? null) ?? ($item['exif']['IFD0']['DateTime'] ?? null);
 				$flat['width'] = $item['exif']['COMPUTED']['Width'] ?? null;
 				$flat['height'] = $item['exif']['COMPUTED']['Height'] ?? null;
 			}
@@ -280,6 +285,64 @@ final class MediaApiService
 		}
 
 		return strtolower($value);
+	}
+
+	/**
+	 * Format EXIF date string into `Y-m-d H:i:s`.
+	 * Accepts `Y:m:d H:i:s` or `Y-m-d H:i:s` input.
+	 *
+	 * @param string|null $s
+	 * @return string|null
+	 */
+	private function formatExifDateString(?string $s): ?string
+	{
+		if ($s === null) {
+			return null;
+		}
+
+		// Try common EXIF format first
+		$dt = \DateTime::createFromFormat('Y:m:d H:i:s', $s);
+		if ($dt === false) {
+			$dt = \DateTime::createFromFormat('Y-m-d H:i:s', $s);
+		}
+		if ($dt === false) {
+			return null;
+		}
+
+		return $dt->format('Y-m-d H:i:s');
+	}
+
+	/**
+	 * Format IPTC date (YYYYMMDD) and optional time (HHMM or HHMMSS) to `Y-m-d H:i:s`.
+	 *
+	 * @param string|null $dateRaw
+	 * @param string|null $timeRaw
+	 * @return string|null
+	 */
+	private function formatIptcDateTime(?string $dateRaw, ?string $timeRaw): ?string
+	{
+		if ($dateRaw === null || !preg_match('/^\d{8}$/', $dateRaw)) {
+			return null;
+		}
+
+		$year = substr($dateRaw, 0, 4);
+		$month = substr($dateRaw, 4, 2);
+		$day = substr($dateRaw, 6, 2);
+
+		$time = '00:00:00';
+		if ($timeRaw !== null && preg_match('/^\d{4,6}$/', $timeRaw)) {
+			$h = substr($timeRaw, 0, 2) ?: '00';
+			$i = substr($timeRaw, 2, 2) ?: '00';
+			$s = strlen($timeRaw) === 6 ? substr($timeRaw, 4, 2) : '00';
+			$time = sprintf('%02d:%02d:%02d', (int)$h, (int)$i, (int)$s);
+		}
+
+		$dt = @\DateTime::createFromFormat('Y-m-d H:i:s', "{$year}-{$month}-{$day} {$time}");
+		if ($dt === false) {
+			return null;
+		}
+
+		return $dt->format('Y-m-d H:i:s');
 	}
 
 	/**

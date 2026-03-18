@@ -5,7 +5,8 @@ function parseExifDateTime(value) {
 		return null;
 	}
 
-	const match = value.match(/^(\d{4}):(\d{2}):(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/);
+	// Accept both `YYYY:MM:DD HH:MM:SS` (EXIF) and `YYYY-MM-DD HH:MM:SS` (API)
+	const match = value.match(/^(\d{4})[:\-](\d{2})[:\-](\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/);
 	if (!match) {
 		return null;
 	}
@@ -20,6 +21,13 @@ function parseIptcDateTime(dateValue, timeValue) {
 		return null;
 	}
 
+	// If the API provided a combined timestamp (YYYY-MM-DD HH:MM:SS), parse it directly
+	if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(dateValue)) {
+		const ts = Date.parse(dateValue.replace(' ', 'T'));
+		return Number.isNaN(ts) ? null : ts;
+	}
+
+	// Fallback: original IPTC format YYYYMMDD + optional HHMM or HHMMSS
 	const dateMatch = dateValue.match(/^(\d{4})(\d{2})(\d{2})$/);
 	if (!dateMatch) {
 		return null;
@@ -27,6 +35,12 @@ function parseIptcDateTime(dateValue, timeValue) {
 
 	let timePart = '00:00:00';
 	if (typeof timeValue === 'string') {
+		// timeValue might itself be a combined timestamp (if server wrote formatted value)
+		if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(timeValue)) {
+			const ts = Date.parse(timeValue.replace(' ', 'T'));
+			return Number.isNaN(ts) ? null : ts;
+		}
+
 		const t = timeValue.slice(0, 6);
 		const timeMatch = t.match(/^(\d{2})(\d{2})(\d{2})$/);
 		if (timeMatch) {
