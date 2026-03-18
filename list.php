@@ -79,7 +79,15 @@ if ($photoData !== null && $photoId !== null) {
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title><?php echo htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8'); ?></title>
-	<link rel="stylesheet" href="<?php echo htmlspecialchars($listCssUrl, ENT_QUOTES, 'UTF-8'); ?>">
+	<?php
+	// Inline CSS from list.css while keeping the source file on disk.
+	$cssFile = __DIR__ . '/list.css';
+	if (is_readable($cssFile)) {
+		echo "<style>\n" . str_replace('</style>', '<\/style>', @file_get_contents($cssFile)) . "\n</style>\n";
+	} else {
+		echo '<link rel="stylesheet" href="' . htmlspecialchars($listCssUrl, ENT_QUOTES, 'UTF-8') . '">';
+	}
+	?>
 	<link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml">
 	<?php
 	// Expose application version from README 'Version:' line
@@ -116,7 +124,21 @@ if ($photoData !== null && $photoId !== null) {
 	<ul id="image-list"></ul>
 	<div id="detail-view" class="detail-view" hidden></div>
 
-	<script src="<?php echo htmlspecialchars($appJsUrl, ENT_QUOTES, 'UTF-8'); ?>"></script>
+	<?php
+	// Inline JS from app.js while keeping the source file on disk.
+	$jsFile = __DIR__ . '/app.js';
+	if (is_readable($jsFile)) {
+		// read and output raw JS
+		$js = @file_get_contents($jsFile);
+		if ($js !== false) {
+			echo "<script>\n" . str_replace('</script>', '<\/script>', $js) . "\n</script>\n";
+		} else {
+			echo '<script src="' . htmlspecialchars($appJsUrl, ENT_QUOTES, 'UTF-8') . '"></script>';
+		}
+	} else {
+		echo '<script src="' . htmlspecialchars($appJsUrl, ENT_QUOTES, 'UTF-8') . '"></script>';
+	}
+	?>
 </body>
 
 </html>
