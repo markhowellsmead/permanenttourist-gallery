@@ -2,7 +2,7 @@
 
 This project scans JPEG images in `media/`, extracts IPTC and EXIF metadata, writes a JSON index, and serves a browser-based gallery view that loads data from a REST-style API.
 
-Version: 20260313-143341
+Version: 20260318-230400
 
 ## Overview
 
@@ -241,6 +241,20 @@ Possible error responses:
 - `/sitemap` and `/sitemap/` → `sitemap.php`
 - `/` and `/?...` → `list.php`
 - any other dynamic path → `404.php`
+
+## Caching
+
+- `.htaccess` config sets a 7-day caching policy for frontend assets (CSS, JS, images and SVG) using `Expires` and `Cache-Control` headers. Static assets (for example `.css`, `.js`, `.jpg`, `.png`, `.webp`, `.avif`, `.svg`) receive `Cache-Control: public, max-age=604800, immutable` and a corresponding `Expires` header. HTML files receive a `public, max-age=604800` header.
+
+- To verify headers from the server, run:
+
+```bash
+curl -I https://yourdomain.com/app.js
+curl -I https://yourdomain.com/list.css
+curl -I https://yourdomain.com/
+```
+
+Look for `Cache-Control` and `Expires` in the response headers. Adjust the caching duration by editing `.htaccess`.
 
 ## Update endpoint
 
