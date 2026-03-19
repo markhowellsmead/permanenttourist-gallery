@@ -613,7 +613,7 @@ function renderImages(images, append = false) {
 		li.style.setProperty('--item-ratio', String(metrics.ratio));
 		li.style.flexBasis = 'calc(var(--grid-target-height, 320px) * var(--item-ratio))';
 
-		const card = document.createElement('div');
+		const card = document.createElement('a');
 		card.className = 'c-grid500__itemlink';
 
 		const uncollapse = document.createElement('i');
@@ -674,14 +674,19 @@ function renderImages(images, append = false) {
 		card.appendChild(metaSecondary);
 		li.appendChild(card);
 
-		// Add click handler for detail view
-		card.style.cursor = 'pointer';
-		card.addEventListener('click', () => {
-			const photoId = getPhotoIdFromUrl(item.url);
-			if (photoId) {
+		// Preserve normal link behavior for modified clicks while using SPA navigation for plain clicks.
+		const photoId = getPhotoIdFromUrl(item.url);
+		if (photoId) {
+			card.href = `/photo/${photoId}/`;
+			card.addEventListener('click', (event) => {
+				if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+					return;
+				}
+
+				event.preventDefault();
 				navigateToPhoto(photoId);
-			}
-		});
+			});
+		}
 
 		list.appendChild(li);
 	}
