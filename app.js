@@ -845,8 +845,15 @@ function getPhotoIdFromUrl(imageUrl) {
 		return null;
 	}
 
-	// Extract filename without extension from URL like "/media/20170919-_DSF1840.jpg"
-	const match = imageUrl.match(/\/([^/]+)\.(jpe?g|png|gif|webp)$/i);
+	let pathname = imageUrl;
+	try {
+		pathname = new URL(imageUrl, window.location.origin).pathname;
+	} catch (_error) {
+		pathname = imageUrl.split('?')[0].split('#')[0];
+	}
+
+	// Extract filename without extension from URL like "/media/20170919-_DSF1840.jpg?v=..."
+	const match = pathname.match(/\/([^/]+)\.(jpe?g|png|gif|webp|avif)$/i);
 	return match ? match[1] : null;
 }
 
