@@ -269,7 +269,7 @@ final class MediaApiService
 				continue;
 			}
 
-			$flat = ['url' => $item['url'] ?? ''];
+			$flat = ['url' => $this->buildVersionedUrl($item['url'] ?? null)];
 
 			// Extract IPTC values
 			if (isset($item['iptc']) && is_array($item['iptc'])) {
@@ -306,6 +306,40 @@ final class MediaApiService
 		}
 
 		return $flattened;
+	}
+
+	/**
+	 * Append a last-modified cache buster to an image URL.
+	 *
+	 * @param mixed $url Relative URL (for example /media/example.jpg)
+	 *
+	 * @return string
+	 */
+	private function buildVersionedUrl($url): string
+	{
+		if (!is_string($url) || trim($url) === '') {
+			return '';
+		}
+
+		$path = parse_url($url, PHP_URL_PATH);
+		if (!is_string($path) || $path === '') {
+			return $url;
+		}
+
+		$projectRoot = dirname(__DIR__, 2);
+		$filePath = $projectRoot . '/' . ltrim($path, '/');
+
+		if (!is_file($filePath)) {
+			return $url;
+		}
+
+		$modifiedAt = @filemtime($filePath);
+		if ($modifiedAt === false) {
+			return $url;
+		}
+
+		$separator = str_contains($url, '?') ? '&' : '?';
+		return $url . $separator . 'v=' . $modifiedAt;
 	}
 
 	/**

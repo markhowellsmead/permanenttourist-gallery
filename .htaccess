@@ -23,7 +23,8 @@ SetEnvIf Request_URI "^/api(?:/.*)?$" NO_CACHE=1
 <IfModule mod_headers.c>
 	# Caching for static assets only
 	<FilesMatch "\.(css|js|jpg|jpeg|png|gif|webp|avif|svg)$">
-		Header set Cache-Control "public, max-age=604800, immutable" env=!NO_CACHE
+		# Keep a 7-day cache window, but allow hard reload / Disable cache to revalidate.
+		Header set Cache-Control "public, max-age=604800, no-transform" env=!NO_CACHE
 	</FilesMatch>
 	<FilesMatch "\.(html|htm)$">
 		Header set Cache-Control "public, max-age=604800" env=!NO_CACHE

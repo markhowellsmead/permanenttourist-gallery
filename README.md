@@ -215,7 +215,7 @@ Pagination response headers (WordPress-style):
 
 Each image in the API response has these top-level fields:
 
-- `url`: image URL path
+- `url`: image URL path with a cache-busting `v=<filemtime>` query parameter (for example `/media/example.jpg?v=1710000000`)
 - `title`: image title from IPTC object_name
 - `country`: country from IPTC
 - `sublocation`: sublocation from IPTC
@@ -271,9 +271,9 @@ Possible error responses:
 
 ## Caching
 
-- `.htaccess` config sets a 7-day caching policy for frontend assets (CSS, JS, images and SVG) using `Expires` and `Cache-Control` headers. Static assets (for example `.css`, `.js`, `.jpg`, `.png`, `.webp`, `.avif`, `.svg`) receive `Cache-Control: public, max-age=604800, immutable` and a corresponding `Expires` header. HTML files receive a `public, max-age=604800` header.
+- `.htaccess` config sets a 7-day caching policy for frontend assets (CSS, JS, images and SVG) using `Expires` and `Cache-Control` headers. Static assets (for example `.css`, `.js`, `.jpg`, `.png`, `.webp`, `.avif`, `.svg`) receive `Cache-Control: public, max-age=604800, no-transform` and a corresponding `Expires` header. HTML files receive a `public, max-age=604800` header.
 
-- `.htaccess` config sets a 7-day caching policy for frontend assets (CSS, JS, images and SVG) using `Expires` and `Cache-Control` headers. Static assets (for example `.css`, `.js`, `.jpg`, `.png`, `.webp`, `.avif`, `.svg`) receive `Cache-Control: public, max-age=604800, immutable` and a corresponding `Expires` header. HTML files receive a `public, max-age=604800` header.
+- `.htaccess` config sets a 7-day caching policy for frontend assets (CSS, JS, images and SVG) using `Expires` and `Cache-Control` headers. Static assets (for example `.css`, `.js`, `.jpg`, `.png`, `.webp`, `.avif`, `.svg`) receive `Cache-Control: public, max-age=604800, no-transform` and a corresponding `Expires` header. HTML files receive a `public, max-age=604800` header.
 
 - The `/api` endpoint is excluded from caching and is served with `Cache-Control: no-store, no-cache, must-revalidate, max-age=0` and `Pragma: no-cache` to ensure clients always receive fresh JSON.
 
