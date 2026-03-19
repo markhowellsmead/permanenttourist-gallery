@@ -111,6 +111,26 @@ h1 {
 	z-index: 1090;
 }
 
+#settings-swipe-hint {
+	display: none;
+	font-size: 0.78rem;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	text-align: center;
+	color: #666;
+	padding: 0.5rem 0.25rem 0.2rem;
+	opacity: 0;
+	transform: translateY(0.25rem);
+	transition:
+		opacity 240ms ease,
+		transform 240ms ease;
+}
+
+#settings-swipe-hint.is-visible {
+	opacity: 1;
+	transform: translateY(0);
+}
+
 #load-more-container {
 	margin: 1.25rem 0 2rem;
 	text-align: center;
@@ -169,6 +189,10 @@ h1 {
 
 	#settings-panel label {
 		font-size: 0.95rem;
+	}
+
+	#settings-swipe-hint {
+		display: block;
 	}
 }
 

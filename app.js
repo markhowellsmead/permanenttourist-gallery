@@ -277,6 +277,13 @@ function createCaptionSettingsPanel() {
 	backdrop.id = 'settings-backdrop';
 	backdrop.hidden = true;
 
+	const swipeHint = document.createElement('div');
+	swipeHint.id = 'settings-swipe-hint';
+	swipeHint.textContent = 'Swipe to close';
+	drawer.appendChild(swipeHint);
+
+	let swipeHintTimerId = null;
+
 	let touchStartX = 0;
 	let touchStartY = 0;
 	let touchDeltaX = 0;
@@ -293,6 +300,17 @@ function createCaptionSettingsPanel() {
 	const resetDrawerDragStyles = () => {
 		drawer.style.transition = '';
 		drawer.style.transform = '';
+	};
+
+	const clearSwipeHintTimer = () => {
+		if (swipeHintTimerId !== null) {
+			window.clearTimeout(swipeHintTimerId);
+			swipeHintTimerId = null;
+		}
+	};
+
+	const setSwipeHintVisible = (isVisible) => {
+		swipeHint.classList.toggle('is-visible', isVisible);
 	};
 
 	const getActiveFilterCount = () => {
@@ -326,6 +344,17 @@ function createCaptionSettingsPanel() {
 		document.body.classList.toggle('settings-open', isOpen);
 		backdrop.hidden = !isOpen;
 		resetDrawerDragStyles();
+		clearSwipeHintTimer();
+
+		if (!isOpen) {
+			setSwipeHintVisible(false);
+		} else if (isMobileDrawerMode()) {
+			setSwipeHintVisible(false);
+			swipeHintTimerId = window.setTimeout(() => {
+				setSwipeHintVisible(true);
+				swipeHintTimerId = null;
+			}, 1000);
+		}
 
 		if (settingsToggle instanceof HTMLButtonElement) {
 			settingsToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
@@ -429,7 +458,13 @@ function createCaptionSettingsPanel() {
 	drawer.addEventListener('touchcancel', handleTouchEnd, { passive: true });
 
 	if (typeof window !== 'undefined') {
-		window.addEventListener('resize', resetDrawerDragStyles);
+		window.addEventListener('resize', () => {
+			resetDrawerDragStyles();
+			if (!isMobileDrawerMode()) {
+				clearSwipeHintTimer();
+				setSwipeHintVisible(false);
+			}
+		});
 	}
 	updateSettingsToggleLabel(false);
 

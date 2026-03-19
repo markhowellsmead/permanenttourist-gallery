@@ -268,6 +268,7 @@ The header contains a settings toggle and the settings panel adapts by viewport 
 - Mobile: settings open in a right-side sliding drawer with backdrop.
 - The toggle label includes the count of active settings (month/year filter, country/region filter, and non-default per-page value).
 - The settings drawer can be closed by the toggle button, tapping the backdrop, pressing `Escape`, or swiping the drawer to the right.
+- When the mobile settings drawer opens, a `Swipe to close` helper message fades in after 1 second.
 
 ## Single image view behavior
 
