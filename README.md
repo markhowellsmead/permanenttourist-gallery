@@ -2,17 +2,16 @@
 
 This project scans JPEG images in `media/`, extracts IPTC and EXIF metadata, writes a JSON index, and serves a browser-based gallery view that loads data from a REST-style API.
 
-Version: 20260319-1240
+Version: 20260319-1251
 
 ## Overview
 
 Main parts:
 
 - `build.php`: scans images and generates `media/media.json`, `sitemap.xml`, and `photo-sitemap.xml`
-- `api.php`: GET-only JSON endpoint returning flattened data structure
+- `api.php`: GET-only JSON endpoint returning flattened data structure plus `/api/meta` filter metadata
 - `index.php`: front controller for dynamic routes (`/api`, `/build`, `/sitemap`) and default list page
-- `list.php`: HTML shell for the list/grid UI with cache-busted assets
- - `list.php`: HTML shell for the list/grid UI. CSS and JS are inlined into the HTML for simpler deployment while the original `list.css` and `app.js` remain available on disk.
+- `list.php`: HTML shell for the list/grid UI. CSS and JS are inlined into the HTML for simpler deployment while the original `list.css` and `app.js` remain available on disk.
 - `functions.php`: bootstrap file which registers autoloading for namespaced classes and loads `.env` file
 - `app.js`: client-side data fetch, sorting, metadata extraction, and grid rendering
 - `list.css`: grid/layout styling
@@ -256,7 +255,18 @@ The list UI now provides a `Per page` dropdown with options `20`, `40`, `60`, an
 - Filter dropdown options are loaded once from `/api/meta`.
 - The initial gallery request loads page `1` using the selected `per_page` value.
 - A `Load more` button fetches the next page and appends entries to the bottom of the existing list.
+- The status line shows loaded vs total count (for example `Showing 40 of 240 images`).
+- The `Load more` button label indicates the exact number of images in the next fetch (for example `Load 40 more images`).
 - The `Load more` button is automatically hidden when `X-Page` is equal to `X-Total-Pages` (or when no pages are available).
+
+## Single image view behavior
+
+The SPA detail view (lightbox-style overlay) reflects the current in-memory list selection (including active filters and loaded pages).
+
+- Previous/Next buttons navigate within the current filtered list order.
+- If both previous and next are unavailable (single-item context), the nav controls are hidden.
+- Keyboard navigation is supported: `ArrowLeft` for previous, `ArrowRight` for next, `Escape` to close.
+- Grid items are semantic links (`<a href="/photo/.../">`) so tab navigation and Enter activation work with keyboards.
 
 Possible error responses:
 
@@ -286,7 +296,7 @@ Possible error responses:
 
 - `.htaccess` config sets a 7-day caching policy for frontend assets (CSS, JS, images and SVG) using `Expires` and `Cache-Control` headers. Static assets (for example `.css`, `.js`, `.jpg`, `.png`, `.webp`, `.avif`, `.svg`) receive `Cache-Control: public, max-age=604800, no-transform` and a corresponding `Expires` header. HTML files receive a `public, max-age=604800` header.
 
-- `.htaccess` config sets a 7-day caching policy for frontend assets (CSS, JS, images and SVG) using `Expires` and `Cache-Control` headers. Static assets (for example `.css`, `.js`, `.jpg`, `.png`, `.webp`, `.avif`, `.svg`) receive `Cache-Control: public, max-age=604800, no-transform` and a corresponding `Expires` header. HTML files receive a `public, max-age=604800` header.
+- Brotli compression is enabled via `.htaccess` for `application/json` (API responses) and `text/html` when Apache `mod_brotli` is available and the client sends `Accept-Encoding: br`.
 
 - The `/api` endpoint is excluded from caching and is served with `Cache-Control: no-store, no-cache, must-revalidate, max-age=0` and `Pragma: no-cache` to ensure clients always receive fresh JSON.
 
