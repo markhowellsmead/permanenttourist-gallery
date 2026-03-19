@@ -648,10 +648,12 @@ final class MediaApiService
 	}
 
 	/**
-	 * Build location filter terms from raw metadata.
+	 * Build country filter terms from raw metadata for /api/meta.
 	 *
-	 * Mirrors frontend behavior: for United Kingdom, prefer state/sublocation
-	 * terms instead of country.
+	 * Rules:
+	 * - Non-UK entries use country name.
+	 * - UK entries use state_province only.
+	 * - Unknown or missing country terms are excluded.
 	 *
 	 * @param mixed $item Image metadata item
 	 *
@@ -660,12 +662,11 @@ final class MediaApiService
 	private function getLocationTerms($item): array
 	{
 		if (!is_array($item)) {
-			return ['Unknown location'];
+			return [];
 		}
 
 		$country = $this->getStringValue($item['iptc']['country_primary_location_name']['value'][0] ?? null);
 		$stateProvince = $this->getStringValue($item['iptc']['state_province']['value'][0] ?? null);
-		$sublocation = $this->getStringValue($item['iptc']['sublocation']['value'][0] ?? null);
 
 		$terms = [];
 		$isUnitedKingdom = $country !== null && $this->normalize($country) === 'united kingdom';
@@ -674,18 +675,12 @@ final class MediaApiService
 			$terms[] = $country;
 		}
 
-		if ($isUnitedKingdom) {
-			if ($stateProvince !== null) {
-				$terms[] = $stateProvince;
-			}
-
-			if ($sublocation !== null) {
-				$terms[] = $sublocation;
-			}
+		if ($isUnitedKingdom && $stateProvince !== null) {
+			$terms[] = $stateProvince;
 		}
 
 		if (count($terms) === 0) {
-			return ['Unknown location'];
+			return [];
 		}
 
 		$seen = [];

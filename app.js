@@ -757,12 +757,55 @@ async function fetchMetaData() {
 	}
 
 	const monthYears = Array.isArray(data.month_years) ? data.month_years : [];
-	const countries = Array.isArray(data.countries) ? data.countries : [];
 
 	return {
 		monthYears,
-		countries,
 	};
+}
+
+function getCountryFilterTerm(item) {
+	if (!item || typeof item !== 'object') {
+		return null;
+	}
+
+	const country = typeof item.country === 'string' ? item.country.trim() : '';
+	const stateProvince = typeof item.state_province === 'string' ? item.state_province.trim() : '';
+
+	if (country === '') {
+		return null;
+	}
+
+	if (country.toLowerCase() === 'united kingdom') {
+		return stateProvince !== '' ? stateProvince : country;
+	}
+
+	return country;
+}
+
+async function fetchCountryFilterOptions() {
+	const terms = new Set();
+	let page = 1;
+	let totalPages = 1;
+
+	while (page <= totalPages) {
+		const response = await fetchImageData('', '', page, 100);
+		totalPages = Math.max(response.totalPages, 1);
+
+		for (const item of response.data) {
+			const term = getCountryFilterTerm(item);
+			if (term) {
+				terms.add(term);
+			}
+		}
+
+		if (response.totalPages === 0) {
+			break;
+		}
+
+		page += 1;
+	}
+
+	return Array.from(terms).sort((a, b) => a.localeCompare(b, LOCALE));
 }
 
 function readPositiveIntHeader(headers, name, fallback = 0) {
@@ -1015,8 +1058,9 @@ async function run() {
 		if (!filterMetaLoaded) {
 			try {
 				const meta = await fetchMetaData();
+				const countries = await fetchCountryFilterOptions();
 				populateMonthYearFilterOptions(meta.monthYears);
-				populateCountryFilterOptions(meta.countries);
+				populateCountryFilterOptions(countries);
 				filterMetaLoaded = true;
 			} catch (metaError) {
 				console.warn('Failed to load filter metadata:', metaError);

@@ -2,7 +2,7 @@
 
 This project scans JPEG images in `media/`, extracts IPTC and EXIF metadata, writes a JSON index, and serves a browser-based gallery view that loads data from a REST-style API.
 
-Version: 20260319-1300
+Version: 20260319-1314
 
 ## Overview
 
@@ -253,6 +253,7 @@ The list UI now provides a `Per page` dropdown with options `20`, `40`, `60`, an
 
 - The selected value is persisted in `localStorage` under `gallery.perPage`.
 - Filter dropdown options are loaded once from `/api/meta`.
+- Country dropdown values are built client-side from paged `/api` records: non-UK entries use `country`; UK entries use `state_province`.
 - The initial gallery request loads page `1` using the selected `per_page` value.
 - A `Load more` button fetches the next page and appends entries to the bottom of the existing list.
 - The status line shows loaded vs total count (for example `Showing 40 of 240 images`).
