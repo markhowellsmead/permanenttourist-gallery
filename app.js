@@ -864,6 +864,13 @@ function findImageByPhotoId(photoId) {
 	});
 }
 
+function getPhotoIndexByPhotoId(photoId) {
+	return allImagesCache.findIndex((item) => {
+		const itemPhotoId = getPhotoIdFromUrl(item.url);
+		return itemPhotoId === photoId;
+	});
+}
+
 function getCurrentRoute() {
 	const path = window.location.pathname;
 	const photoMatch = path.match(/^\/photo\/([^/]+)\/?$/);
@@ -887,6 +894,29 @@ function navigateToPhoto(photoId) {
 function navigateToList() {
 	window.history.pushState({ type: 'list' }, '', '/');
 	hideDetailView();
+}
+
+function navigateDetailByOffset(offset) {
+	const route = getCurrentRoute();
+	if (route.type !== 'photo') {
+		return;
+	}
+
+	const currentIndex = getPhotoIndexByPhotoId(route.photoId);
+	if (currentIndex < 0) {
+		return;
+	}
+
+	const targetIndex = currentIndex + offset;
+	if (targetIndex < 0 || targetIndex >= allImagesCache.length) {
+		return;
+	}
+
+	const targetItem = allImagesCache[targetIndex];
+	const targetPhotoId = getPhotoIdFromUrl(targetItem?.url);
+	if (targetPhotoId) {
+		navigateToPhoto(targetPhotoId);
+	}
 }
 
 // Meta tag management for detail view
@@ -972,6 +1002,7 @@ function markServerRenderedMetaTagsAsDynamic() {
 
 function showDetailView(photoId) {
 	const image = findImageByPhotoId(photoId);
+	const imageIndex = getPhotoIndexByPhotoId(photoId);
 	if (!image) {
 		console.error('Image not found:', photoId);
 		navigateToList();
@@ -1000,6 +1031,51 @@ function showDetailView(photoId) {
 	closeButton.addEventListener('click', () => {
 		navigateToList();
 	});
+
+	const previousItem = imageIndex > 0 ? allImagesCache[imageIndex - 1] : null;
+	const nextItem = imageIndex >= 0 && imageIndex < allImagesCache.length - 1 ? allImagesCache[imageIndex + 1] : null;
+	const hasAnyNeighbor = previousItem !== null || nextItem !== null;
+
+	const nav = document.createElement('div');
+	nav.className = 'detail-view__nav';
+	nav.hidden = !hasAnyNeighbor;
+
+	const previousButton = document.createElement('button');
+	previousButton.className = 'detail-view__nav-button detail-view__nav-button--previous';
+	previousButton.type = 'button';
+	previousButton.textContent = '← Previous';
+	previousButton.setAttribute('aria-label', 'Show previous image');
+
+	if (previousItem === null) {
+		previousButton.disabled = true;
+	} else {
+		previousButton.addEventListener('click', () => {
+			const previousPhotoId = getPhotoIdFromUrl(previousItem.url);
+			if (previousPhotoId) {
+				navigateToPhoto(previousPhotoId);
+			}
+		});
+	}
+
+	const nextButton = document.createElement('button');
+	nextButton.className = 'detail-view__nav-button detail-view__nav-button--next';
+	nextButton.type = 'button';
+	nextButton.textContent = 'Next →';
+	nextButton.setAttribute('aria-label', 'Show next image');
+
+	if (nextItem === null) {
+		nextButton.disabled = true;
+	} else {
+		nextButton.addEventListener('click', () => {
+			const nextPhotoId = getPhotoIdFromUrl(nextItem.url);
+			if (nextPhotoId) {
+				navigateToPhoto(nextPhotoId);
+			}
+		});
+	}
+
+	nav.appendChild(previousButton);
+	nav.appendChild(nextButton);
 
 	const imageContainer = document.createElement('div');
 	imageContainer.className = 'detail-view__image-container';
@@ -1040,6 +1116,7 @@ function showDetailView(photoId) {
 	imageContainer.appendChild(img);
 
 	detailView.appendChild(closeButton);
+	detailView.appendChild(nav);
 	detailView.appendChild(imageContainer);
 	detailView.appendChild(caption);
 
@@ -1085,11 +1162,38 @@ window.addEventListener('popstate', (event) => {
 
 // Handle Escape key to close detail view
 window.addEventListener('keydown', (event) => {
+	const target = event.target;
+	if (
+		target instanceof HTMLInputElement ||
+		target instanceof HTMLTextAreaElement ||
+		target instanceof HTMLSelectElement ||
+		(target instanceof HTMLElement && target.isContentEditable)
+	) {
+		return;
+	}
+
 	if (event.key === 'Escape') {
 		const detailView = document.getElementById('detail-view');
 		if (detailView && !detailView.hidden) {
 			navigateToList();
 		}
+		return;
+	}
+
+	const detailView = document.getElementById('detail-view');
+	if (!detailView || detailView.hidden) {
+		return;
+	}
+
+	if (event.key === 'ArrowLeft') {
+		event.preventDefault();
+		navigateDetailByOffset(-1);
+		return;
+	}
+
+	if (event.key === 'ArrowRight') {
+		event.preventDefault();
+		navigateDetailByOffset(1);
 	}
 });
 
