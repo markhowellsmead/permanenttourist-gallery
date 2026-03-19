@@ -11,9 +11,48 @@ body {
 	color: #222;
 }
 
+.page-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 1rem;
+	margin-bottom: 1rem;
+	padding: 1rem 1.25rem;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 0.7rem;
+}
+
+.page-header__title-group {
+	min-width: 0;
+}
+
 h1 {
 	margin-top: 0;
-	margin-bottom: 1rem;
+	margin-bottom: 0.45rem;
+}
+
+.page-header__title-group p {
+	margin: 0;
+	font-size: 0.95rem;
+	color: #555;
+}
+
+.settings-toggle {
+	display: none;
+	padding: 0.5rem 0.8rem;
+	font-size: 0.9rem;
+	font-weight: 600;
+	border: 1px solid #bbb;
+	border-radius: 0.35rem;
+	background: #fff;
+	color: #222;
+	cursor: pointer;
+}
+
+.settings-toggle:hover,
+.settings-toggle:focus {
+	background: #f2f2f2;
 }
 
 #status {
@@ -21,12 +60,19 @@ h1 {
 	color: #444;
 }
 
-#settings-panel {
+#settings-drawer {
 	margin-bottom: 1rem;
+}
+
+#settings-panel {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
 	gap: 0.6rem;
+	padding: 0.9rem 1rem;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 0.7rem;
 }
 
 #settings-panel label {
@@ -58,6 +104,13 @@ h1 {
 	background: #f2f2f2;
 }
 
+#settings-backdrop {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.4);
+	z-index: 1090;
+}
+
 #load-more-container {
 	margin: 1.25rem 0 2rem;
 	text-align: center;
@@ -66,6 +119,57 @@ h1 {
 #load-more-button[disabled] {
 	opacity: 0.6;
 	cursor: not-allowed;
+}
+
+@media (max-width: 48rem) {
+	body {
+		padding: 1rem;
+	}
+
+	.page-header {
+		align-items: center;
+		padding: 0.8rem 1rem;
+	}
+
+	.settings-toggle {
+		display: inline-flex;
+	}
+
+	#settings-drawer {
+		position: fixed;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		width: min(24rem, 88vw);
+		margin: 0;
+		padding: 0.8rem;
+		overflow-y: auto;
+		background: #fff;
+		box-shadow: -0.4rem 0 1.2rem rgba(0, 0, 0, 0.22);
+		transform: translateX(105%);
+		transition: transform 240ms ease;
+		z-index: 1100;
+	}
+
+	body.settings-open {
+		overflow: hidden;
+	}
+
+	body.settings-open #settings-drawer {
+		transform: translateX(0);
+	}
+
+	#settings-panel {
+		display: grid;
+		grid-template-columns: 1fr;
+		align-items: stretch;
+		gap: 0.65rem;
+		padding: 0.8rem;
+	}
+
+	#settings-panel label {
+		font-size: 0.95rem;
+	}
 }
 
 #image-list {

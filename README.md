@@ -2,7 +2,7 @@
 
 This project scans JPEG images in `media/`, extracts IPTC and EXIF metadata, writes a JSON index, and serves a browser-based gallery view that loads data from a REST-style API.
 
-Version: 20260319-1251
+Version: 20260319-1300
 
 ## Overview
 
@@ -258,6 +258,16 @@ The list UI now provides a `Per page` dropdown with options `20`, `40`, `60`, an
 - The status line shows loaded vs total count (for example `Showing 40 of 240 images`).
 - The `Load more` button label indicates the exact number of images in the next fetch (for example `Load 40 more images`).
 - The `Load more` button is automatically hidden when `X-Page` is equal to `X-Total-Pages` (or when no pages are available).
+- The settings reset action also resets `per_page` to its default (`20`) and updates `localStorage`.
+
+## Settings panel behavior
+
+The header contains a settings toggle and the settings panel adapts by viewport size.
+
+- Desktop: settings are shown inline under the header.
+- Mobile: settings open in a right-side sliding drawer with backdrop.
+- The toggle label includes the count of active settings (month/year filter, country/region filter, and non-default per-page value).
+- The settings drawer can be closed by the toggle button, tapping the backdrop, pressing `Escape`, or swiping the drawer to the right.
 
 ## Single image view behavior
 

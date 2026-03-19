@@ -100,10 +100,10 @@ if ($photoData !== null && $photoId !== null) {
 		}
 	}
 	?>
-	<?php if ($canonicalUrl !== null): ?>
+	<?php if ($canonicalUrl !== null) : ?>
 		<link rel="canonical" href="<?php echo htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8'); ?>">
 	<?php endif; ?>
-	<?php if ($ogTitle !== null && $ogDescription !== null && $ogImage !== null && $ogUrl !== null): ?>
+	<?php if ($ogTitle !== null && $ogDescription !== null && $ogImage !== null && $ogUrl !== null) : ?>
 		<meta property="og:title" content="<?php echo htmlspecialchars($ogTitle, ENT_QUOTES, 'UTF-8'); ?>">
 		<meta property="og:description" content="<?php echo htmlspecialchars($ogDescription, ENT_QUOTES, 'UTF-8'); ?>">
 		<meta property="og:image" content="<?php echo htmlspecialchars($ogImage, ENT_QUOTES, 'UTF-8'); ?>">
@@ -118,8 +118,20 @@ if ($photoData !== null && $photoId !== null) {
 </head>
 
 <body>
-	<h1>Permanent Tourist photographic archive</h1>
-	<p>Photos by Mark Howells-Mead. (<a href="https://www.permanenttourist.ch/">Main website</a>)</p>
+	<header id="page-header" class="page-header">
+		<div class="page-header__title-group">
+			<h1>Permanent Tourist photographic archive</h1>
+			<p>Photos by Mark Howells-Mead. (<a href="https://www.permanenttourist.ch/">Main website</a>)</p>
+		</div>
+		<button
+			type="button"
+			id="settings-toggle"
+			class="settings-toggle"
+			aria-expanded="false"
+			aria-controls="settings-drawer">
+			Open settings
+		</button>
+	</header>
 	<div id="status">Loading…</div>
 	<ul id="image-list"></ul>
 	<div id="detail-view" class="detail-view" hidden></div>

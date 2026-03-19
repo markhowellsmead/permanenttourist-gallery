@@ -172,15 +172,18 @@ function initResponsiveTargetHeight() {
 const SHOW_CAPTIONS_STORAGE_KEY = 'gallery.showCaptions';
 const PER_PAGE_STORAGE_KEY = 'gallery.perPage';
 const PER_PAGE_OPTIONS = [20, 40, 60, 100];
+const DEFAULT_PER_PAGE = 20;
 const DEFAULT_PAGE_TITLE = document.title;
 let selectedMonthYear = '';
 let selectedCountry = '';
-let selectedPerPage = 20;
+let selectedPerPage = DEFAULT_PER_PAGE;
 let currentPage = 1;
 let totalPages = 0;
 let totalImages = 0;
 let isLoadingPage = false;
 let filterMetaLoaded = false;
+let closeSettingsDrawer = () => {};
+let isSettingsDrawerOpen = () => false;
 
 function setShowCaptionsEnabled(enabled) {
 	document.body.classList.toggle('show-captions', enabled);
@@ -197,9 +200,15 @@ function createCaptionSettingsPanel() {
 		return null;
 	}
 
+	const settingsToggle = document.getElementById('settings-toggle');
+
 	const panel = document.createElement('div');
 	panel.id = 'settings-panel';
 	panel.setAttribute('aria-label', 'Gallery settings');
+
+	const drawer = document.createElement('aside');
+	drawer.id = 'settings-drawer';
+	drawer.setAttribute('aria-label', 'Gallery settings drawer');
 
 	const label = document.createElement('label');
 	label.setAttribute('for', 'show-captions-checkbox');
@@ -262,8 +271,167 @@ function createCaptionSettingsPanel() {
 	panel.appendChild(perPageLabel);
 	panel.appendChild(perPageSelect);
 	panel.appendChild(resetButton);
+	drawer.appendChild(panel);
 
-	status.parentNode.insertBefore(panel, status);
+	const backdrop = document.createElement('div');
+	backdrop.id = 'settings-backdrop';
+	backdrop.hidden = true;
+
+	let touchStartX = 0;
+	let touchStartY = 0;
+	let touchDeltaX = 0;
+	let isTrackingTouch = false;
+	let isSwipingDrawer = false;
+
+	status.parentNode.insertBefore(drawer, status);
+	document.body.appendChild(backdrop);
+
+	const isMobileDrawerMode = () => {
+		return typeof window !== 'undefined' && window.matchMedia('(max-width: 48rem)').matches;
+	};
+
+	const resetDrawerDragStyles = () => {
+		drawer.style.transition = '';
+		drawer.style.transform = '';
+	};
+
+	const getActiveFilterCount = () => {
+		let count = 0;
+		if (monthYearSelect.value !== '') {
+			count += 1;
+		}
+
+		if (countrySelect.value !== '') {
+			count += 1;
+		}
+
+		if (normalizePerPage(perPageSelect.value) !== DEFAULT_PER_PAGE) {
+			count += 1;
+		}
+
+		return count;
+	};
+
+	const updateSettingsToggleLabel = (isOpen) => {
+		if (!(settingsToggle instanceof HTMLButtonElement)) {
+			return;
+		}
+
+		const activeFilterCount = getActiveFilterCount();
+		const countSuffix = activeFilterCount > 0 ? ` (${activeFilterCount})` : '';
+		settingsToggle.textContent = isOpen ? `Close settings${countSuffix}` : `Open settings${countSuffix}`;
+	};
+
+	const setSettingsOpen = (isOpen) => {
+		document.body.classList.toggle('settings-open', isOpen);
+		backdrop.hidden = !isOpen;
+		resetDrawerDragStyles();
+
+		if (settingsToggle instanceof HTMLButtonElement) {
+			settingsToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+		}
+
+		updateSettingsToggleLabel(isOpen);
+	};
+
+	const closeSettings = () => setSettingsOpen(false);
+	const openSettings = () => setSettingsOpen(true);
+
+	if (settingsToggle instanceof HTMLButtonElement) {
+		settingsToggle.addEventListener('click', () => {
+			if (document.body.classList.contains('settings-open')) {
+				closeSettings();
+			} else {
+				openSettings();
+			}
+		});
+	}
+
+	backdrop.addEventListener('click', closeSettings);
+
+	drawer.addEventListener(
+		'touchstart',
+		(event) => {
+			if (!document.body.classList.contains('settings-open') || !isMobileDrawerMode()) {
+				return;
+			}
+
+			if (event.touches.length !== 1) {
+				return;
+			}
+
+			const touch = event.touches[0];
+			touchStartX = touch.clientX;
+			touchStartY = touch.clientY;
+			touchDeltaX = 0;
+			isTrackingTouch = true;
+			isSwipingDrawer = false;
+		},
+		{ passive: true },
+	);
+
+	drawer.addEventListener(
+		'touchmove',
+		(event) => {
+			if (!isTrackingTouch || event.touches.length !== 1) {
+				return;
+			}
+
+			const touch = event.touches[0];
+			const deltaX = touch.clientX - touchStartX;
+			const deltaY = touch.clientY - touchStartY;
+
+			if (!isSwipingDrawer) {
+				if (Math.abs(deltaX) < 10 || Math.abs(deltaX) <= Math.abs(deltaY)) {
+					return;
+				}
+
+				isSwipingDrawer = true;
+			}
+
+			if (deltaX <= 0) {
+				touchDeltaX = 0;
+				return;
+			}
+
+			if (event.cancelable) {
+				event.preventDefault();
+			}
+
+			touchDeltaX = deltaX;
+			drawer.style.transition = 'none';
+			drawer.style.transform = `translateX(${touchDeltaX}px)`;
+		},
+		{ passive: false },
+	);
+
+	const handleTouchEnd = () => {
+		if (!isTrackingTouch) {
+			return;
+		}
+
+		const threshold = Math.max(72, drawer.clientWidth * 0.22);
+		const shouldClose = isSwipingDrawer && touchDeltaX > threshold;
+
+		isTrackingTouch = false;
+		isSwipingDrawer = false;
+		touchDeltaX = 0;
+
+		if (shouldClose) {
+			closeSettings();
+			return;
+		}
+
+		resetDrawerDragStyles();
+	};
+
+	drawer.addEventListener('touchend', handleTouchEnd, { passive: true });
+	drawer.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+
+	if (typeof window !== 'undefined') {
+		window.addEventListener('resize', resetDrawerDragStyles);
+	}
+	updateSettingsToggleLabel(false);
 
 	const loadMoreContainer = document.createElement('div');
 	loadMoreContainer.id = 'load-more-container';
@@ -284,12 +452,16 @@ function createCaptionSettingsPanel() {
 		perPageSelect,
 		resetButton,
 		loadMoreButton,
+		openSettings,
+		closeSettings,
+		isSettingsOpen: () => document.body.classList.contains('settings-open'),
+		refreshSettingsToggleLabel: () => updateSettingsToggleLabel(document.body.classList.contains('settings-open')),
 	};
 }
 
 function normalizePerPage(value) {
 	const parsed = Number.parseInt(String(value), 10);
-	return PER_PAGE_OPTIONS.includes(parsed) ? parsed : 20;
+	return PER_PAGE_OPTIONS.includes(parsed) ? parsed : DEFAULT_PER_PAGE;
 }
 
 function initSettingsPanel() {
@@ -304,9 +476,15 @@ function initSettingsPanel() {
 	const perPageSelect = settings.perPageSelect;
 	const resetButton = settings.resetButton;
 	const loadMoreButton = settings.loadMoreButton;
+	const closeSettings = settings.closeSettings;
+	const isSettingsOpen = settings.isSettingsOpen;
+	const refreshSettingsToggleLabel = settings.refreshSettingsToggleLabel;
 	if (!(checkbox instanceof HTMLInputElement)) {
 		return;
 	}
+
+	closeSettingsDrawer = closeSettings;
+	isSettingsDrawerOpen = isSettingsOpen;
 
 	let enabled = false;
 	try {
@@ -321,7 +499,7 @@ function initSettingsPanel() {
 	try {
 		selectedPerPage = normalizePerPage(localStorage.getItem(PER_PAGE_STORAGE_KEY));
 	} catch (_error) {
-		selectedPerPage = 20;
+		selectedPerPage = DEFAULT_PER_PAGE;
 	}
 
 	if (perPageSelect instanceof HTMLSelectElement) {
@@ -340,6 +518,8 @@ function initSettingsPanel() {
 	if (monthYearSelect instanceof HTMLSelectElement) {
 		monthYearSelect.addEventListener('change', () => {
 			selectedMonthYear = monthYearSelect.value;
+			refreshSettingsToggleLabel();
+			closeSettings();
 			run();
 		});
 	}
@@ -347,6 +527,8 @@ function initSettingsPanel() {
 	if (countrySelect instanceof HTMLSelectElement) {
 		countrySelect.addEventListener('change', () => {
 			selectedCountry = countrySelect.value;
+			refreshSettingsToggleLabel();
+			closeSettings();
 			run();
 		});
 	}
@@ -359,6 +541,8 @@ function initSettingsPanel() {
 				localStorage.setItem(PER_PAGE_STORAGE_KEY, String(selectedPerPage));
 			} catch (_error) {}
 
+			refreshSettingsToggleLabel();
+			closeSettings();
 			run();
 		});
 	}
@@ -372,24 +556,36 @@ function initSettingsPanel() {
 	if (
 		resetButton instanceof HTMLButtonElement &&
 		monthYearSelect instanceof HTMLSelectElement &&
-		countrySelect instanceof HTMLSelectElement
+		countrySelect instanceof HTMLSelectElement &&
+		perPageSelect instanceof HTMLSelectElement
 	) {
 		const updateResetButtonVisibility = () => {
-			const hasActiveFilter = monthYearSelect.value !== '' || countrySelect.value !== '';
+			const hasActiveFilter =
+				monthYearSelect.value !== '' || countrySelect.value !== '' || normalizePerPage(perPageSelect.value) !== DEFAULT_PER_PAGE;
 			resetButton.hidden = !hasActiveFilter;
+			refreshSettingsToggleLabel();
 		};
 
 		updateResetButtonVisibility();
 
 		monthYearSelect.addEventListener('change', updateResetButtonVisibility);
 		countrySelect.addEventListener('change', updateResetButtonVisibility);
+		perPageSelect.addEventListener('change', updateResetButtonVisibility);
 
 		resetButton.addEventListener('click', () => {
 			selectedMonthYear = '';
 			selectedCountry = '';
+			selectedPerPage = DEFAULT_PER_PAGE;
 			monthYearSelect.value = '';
 			countrySelect.value = '';
+			perPageSelect.value = String(DEFAULT_PER_PAGE);
+
+			try {
+				localStorage.setItem(PER_PAGE_STORAGE_KEY, String(DEFAULT_PER_PAGE));
+			} catch (_error) {}
+
 			updateResetButtonVisibility();
+			closeSettings();
 			run();
 		});
 	}
@@ -1178,6 +1374,11 @@ window.addEventListener('keydown', (event) => {
 	}
 
 	if (event.key === 'Escape') {
+		if (isSettingsDrawerOpen()) {
+			closeSettingsDrawer();
+			return;
+		}
+
 		const detailView = document.getElementById('detail-view');
 		if (detailView && !detailView.hidden) {
 			navigateToList();
