@@ -514,6 +514,7 @@ function initSettingsPanel() {
 	const closeSettings = settings.closeSettings;
 	const isSettingsOpen = settings.isSettingsOpen;
 	const refreshSettingsToggleLabel = settings.refreshSettingsToggleLabel;
+	let updateResetButtonVisibility = () => {};
 	if (!(checkbox instanceof HTMLInputElement)) {
 		return;
 	}
@@ -553,6 +554,7 @@ function initSettingsPanel() {
 	if (monthYearSelect instanceof HTMLSelectElement) {
 		monthYearSelect.addEventListener('change', () => {
 			selectedMonthYear = monthYearSelect.value;
+			updateResetButtonVisibility();
 			refreshSettingsToggleLabel();
 			closeSettings();
 			run();
@@ -562,6 +564,7 @@ function initSettingsPanel() {
 	if (countrySelect instanceof HTMLSelectElement) {
 		countrySelect.addEventListener('change', () => {
 			selectedCountry = countrySelect.value;
+			updateResetButtonVisibility();
 			refreshSettingsToggleLabel();
 			closeSettings();
 			run();
@@ -576,6 +579,7 @@ function initSettingsPanel() {
 				localStorage.setItem(PER_PAGE_STORAGE_KEY, String(selectedPerPage));
 			} catch (_error) {}
 
+			updateResetButtonVisibility();
 			refreshSettingsToggleLabel();
 			closeSettings();
 			run();
@@ -594,7 +598,7 @@ function initSettingsPanel() {
 		countrySelect instanceof HTMLSelectElement &&
 		perPageSelect instanceof HTMLSelectElement
 	) {
-		const updateResetButtonVisibility = () => {
+		updateResetButtonVisibility = () => {
 			const hasActiveFilter =
 				monthYearSelect.value !== '' || countrySelect.value !== '' || normalizePerPage(perPageSelect.value) !== DEFAULT_PER_PAGE;
 			resetButton.hidden = !hasActiveFilter;
