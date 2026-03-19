@@ -19,6 +19,84 @@ namespace PT\Gallery\Api;
 final class MediaApiService
 {
 	/**
+	 * Handle API request for filter metadata.
+	 *
+	 * Returns month/year and country/location values for populating filter dropdowns.
+	 *
+	 * @param string $requestMethod Request HTTP method (only GET allowed)
+	 * @param string $jsonFile      Path to media.json file
+	 *
+	 * @return void
+	 */
+	public function handleMeta(string $requestMethod, string $jsonFile): void
+	{
+		header('Content-Type: application/json; charset=utf-8');
+
+		if ($requestMethod !== 'GET') {
+			$this->sendJson(405, [
+				'error' => 'method_not_allowed',
+				'message' => 'Only GET requests are allowed.',
+			], ['Allow: GET']);
+			return;
+		}
+
+		if (!is_file($jsonFile) || !is_readable($jsonFile)) {
+			$this->sendJson(404, [
+				'error' => 'not_found',
+				'message' => 'Media JSON file was not found.',
+			]);
+			return;
+		}
+
+		$raw = file_get_contents($jsonFile);
+		if ($raw === false) {
+			$this->sendJson(500, [
+				'error' => 'read_error',
+				'message' => 'Unable to read media JSON file.',
+			]);
+			return;
+		}
+
+		$data = json_decode($raw, true);
+		if (!is_array($data)) {
+			$this->sendJson(500, [
+				'error' => 'invalid_json',
+				'message' => 'Media JSON file could not be parsed.',
+			]);
+			return;
+		}
+
+		$monthYears = [];
+		$countries = [];
+
+		foreach ($data as $item) {
+			if (!is_array($item)) {
+				continue;
+			}
+
+			$monthYear = $this->getCaptureMonthYear($item);
+			if (is_string($monthYear) && $monthYear !== '') {
+				$monthYears[$monthYear] = true;
+			}
+
+			foreach ($this->getLocationTerms($item) as $term) {
+				$countries[$term] = true;
+			}
+		}
+
+		$monthYearValues = array_keys($monthYears);
+		rsort($monthYearValues, SORT_STRING);
+
+		$countryValues = array_keys($countries);
+		usort($countryValues, 'strcasecmp');
+
+		$this->sendJson(200, [
+			'month_years' => $monthYearValues,
+			'countries' => $countryValues,
+		]);
+	}
+
+	/**
 	 * Handle API request for media data
 	 *
 	 * Validates request method, reads media JSON file, applies filters,
@@ -567,5 +645,61 @@ final class MediaApiService
 		}
 
 		return $dt->getTimestamp();
+	}
+
+	/**
+	 * Build location filter terms from raw metadata.
+	 *
+	 * Mirrors frontend behavior: for United Kingdom, prefer state/sublocation
+	 * terms instead of country.
+	 *
+	 * @param mixed $item Image metadata item
+	 *
+	 * @return array<int, string>
+	 */
+	private function getLocationTerms($item): array
+	{
+		if (!is_array($item)) {
+			return ['Unknown location'];
+		}
+
+		$country = $this->getStringValue($item['iptc']['country_primary_location_name']['value'][0] ?? null);
+		$stateProvince = $this->getStringValue($item['iptc']['state_province']['value'][0] ?? null);
+		$sublocation = $this->getStringValue($item['iptc']['sublocation']['value'][0] ?? null);
+
+		$terms = [];
+		$isUnitedKingdom = $country !== null && $this->normalize($country) === 'united kingdom';
+
+		if ($country !== null && !$isUnitedKingdom) {
+			$terms[] = $country;
+		}
+
+		if ($isUnitedKingdom) {
+			if ($stateProvince !== null) {
+				$terms[] = $stateProvince;
+			}
+
+			if ($sublocation !== null) {
+				$terms[] = $sublocation;
+			}
+		}
+
+		if (count($terms) === 0) {
+			return ['Unknown location'];
+		}
+
+		$seen = [];
+		$unique = [];
+		foreach ($terms as $term) {
+			$key = $this->normalize($term);
+			if (isset($seen[$key])) {
+				continue;
+			}
+
+			$seen[$key] = true;
+			$unique[] = $term;
+		}
+
+		return $unique;
 	}
 }

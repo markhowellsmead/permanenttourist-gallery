@@ -37,6 +37,12 @@ $path = (string) parse_url($uri, PHP_URL_PATH);
 // Normalize path (no leading/trailing slash)
 $path = trim($path, '/');
 
+// Dedicated metadata endpoint for filter dropdown values
+if ($path === 'api/meta') {
+	$service->handleMeta($method, $jsonFile);
+	return;
+}
+
 // Robustly locate a '/filter/' segment anywhere in the path and parse subsequent key/value pairs
 $filterPrefix = '/filter/';
 $fullPath = '/' . $path;

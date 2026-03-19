@@ -180,7 +180,7 @@ let currentPage = 1;
 let totalPages = 0;
 let totalImages = 0;
 let isLoadingPage = false;
-let filtersInitialized = false;
+let filterMetaLoaded = false;
 
 function setShowCaptionsEnabled(enabled) {
 	document.body.classList.toggle('show-captions', enabled);
@@ -458,22 +458,14 @@ function formatMonthYearKey(monthYearKey) {
 	});
 }
 
-function populateMonthYearFilterOptions(items) {
+function populateMonthYearFilterOptions(monthYears) {
 	const monthYearSelect = document.getElementById('month-year-filter-select');
 	if (!(monthYearSelect instanceof HTMLSelectElement)) {
 		return;
 	}
 
-	const monthYears = new Set();
-	for (const item of items) {
-		const captureTs = getCaptureTimestamp(item);
-		const key = getMonthYearKeyFromTimestamp(captureTs);
-		if (key !== null) {
-			monthYears.add(key);
-		}
-	}
-
-	const sortedMonthYears = Array.from(monthYears).sort((a, b) => b.localeCompare(a, LOCALE));
+	const values = Array.isArray(monthYears) ? monthYears.filter((value) => typeof value === 'string' && value !== '') : [];
+	const sortedMonthYears = Array.from(new Set(values)).sort((a, b) => b.localeCompare(a, LOCALE));
 
 	const existingValue = monthYearSelect.value;
 	while (monthYearSelect.options.length > 1) {
@@ -490,21 +482,14 @@ function populateMonthYearFilterOptions(items) {
 	monthYearSelect.value = existingValue;
 }
 
-function populateCountryFilterOptions(items) {
+function populateCountryFilterOptions(countries) {
 	const countrySelect = document.getElementById('country-filter-select');
 	if (!(countrySelect instanceof HTMLSelectElement)) {
 		return;
 	}
 
-	const countries = new Set();
-	for (const item of items) {
-		const terms = getLocationTerms(item);
-		for (const term of terms) {
-			countries.add(term);
-		}
-	}
-
-	const sortedCountries = Array.from(countries).sort((a, b) => a.localeCompare(b, LOCALE));
+	const values = Array.isArray(countries) ? countries.filter((value) => typeof value === 'string' && value !== '') : [];
+	const sortedCountries = Array.from(new Set(values)).sort((a, b) => a.localeCompare(b, LOCALE));
 
 	const existingValue = countrySelect.value;
 	while (countrySelect.options.length > 1) {
@@ -519,6 +504,30 @@ function populateCountryFilterOptions(items) {
 	}
 
 	countrySelect.value = existingValue;
+}
+
+async function fetchMetaData() {
+	const requestUrl = `${window.location.origin}/api/meta`;
+	const response = await fetch(requestUrl, {
+		method: 'GET',
+	});
+
+	if (!response.ok) {
+		throw new Error(`Metadata API returned ${response.status}`);
+	}
+
+	const data = await response.json();
+	if (!data || typeof data !== 'object') {
+		throw new Error('Unexpected metadata API response format.');
+	}
+
+	const monthYears = Array.isArray(data.month_years) ? data.month_years : [];
+	const countries = Array.isArray(data.countries) ? data.countries : [];
+
+	return {
+		monthYears,
+		countries,
+	};
 }
 
 function readPositiveIntHeader(headers, name, fallback = 0) {
@@ -583,26 +592,6 @@ async function fetchImageData(monthYear = '', country = '', page = 1, perPage = 
 		totalPages: responseTotalPages,
 		total: responseTotal,
 	};
-}
-
-async function fetchAllImagesForFilters() {
-	const allItems = [];
-	let page = 1;
-	let lastPage = 1;
-
-	while (page <= lastPage) {
-		const response = await fetchImageData('', '', page, 100);
-		allItems.push(...response.data);
-		lastPage = Math.max(response.totalPages, 1);
-
-		if (response.totalPages === 0) {
-			break;
-		}
-
-		page += 1;
-	}
-
-	return allItems;
 }
 
 function renderImages(images, append = false) {
@@ -783,11 +772,15 @@ async function run() {
 		allImagesCache = [];
 		renderImages([]);
 
-		if (!filtersInitialized) {
-			const filterData = await fetchAllImagesForFilters();
-			populateMonthYearFilterOptions(filterData);
-			populateCountryFilterOptions(filterData);
-			filtersInitialized = true;
+		if (!filterMetaLoaded) {
+			try {
+				const meta = await fetchMetaData();
+				populateMonthYearFilterOptions(meta.monthYears);
+				populateCountryFilterOptions(meta.countries);
+				filterMetaLoaded = true;
+			} catch (metaError) {
+				console.warn('Failed to load filter metadata:', metaError);
+			}
 		}
 
 		isLoadingPage = true;
@@ -830,8 +823,6 @@ async function loadMore() {
 		const response = await fetchImageData(selectedMonthYear, selectedCountry, nextPage, selectedPerPage);
 
 		currentPage = Math.max(response.page, nextPage);
-		totalPages = Math.max(response.totalPages, totalPages);
-		totalImages = Math.max(response.total, totalImages);
 
 		const additionalItems = toItemsWithCaptureTs(response.data);
 		allImagesCache = [...allImagesCache, ...additionalItems];

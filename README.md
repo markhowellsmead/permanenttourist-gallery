@@ -144,6 +144,7 @@ Notes:
 Endpoint:
 
 - `GET /api` (and `GET /api/` via route normalization)
+- `GET /api/meta` (filter option metadata for frontend dropdowns)
 
 Rules:
 
@@ -156,6 +157,7 @@ Rules:
   - `page` (1-based page number, default `1`)
   - `per_page` (items per page, default `20`, maximum `100`)
 - Sorts records by capture timestamp (newest first) before pagination
+- Compresses API (`application/json`) and HTML (`text/html`) responses with Brotli when Apache `mod_brotli` is available and the client advertises Brotli support
 - Supports optional filtering via:
     - `month_year` in `yyyy-mm` format (for example `/api?month_year=2024-03`)
   - `year` in `yyyy` format (for example `/api?year=2024`)
@@ -170,6 +172,16 @@ Example filter combinations:
 - `/api?country=Scotland`
 - `/api?country=Scotland&month_year=2017-09`
 - `/api?country=Scotland&month_year=2017-09&page=3&per_page=20`
+
+Metadata endpoint examples:
+
+- `/api/meta`
+- `/api/meta/`
+
+`/api/meta` response structure:
+
+- `month_years`: array of available month-year keys (`YYYY-MM`), sorted newest first
+- `countries`: array of available country/region terms, sorted alphabetically
 
 You can also use the readable path form for the year filter. Examples:
 
@@ -241,6 +253,7 @@ This flattened structure simplifies frontend code and reduces payload size by ~6
 The list UI now provides a `Per page` dropdown with options `20`, `40`, `60`, and `100`.
 
 - The selected value is persisted in `localStorage` under `gallery.perPage`.
+- Filter dropdown options are loaded once from `/api/meta`.
 - The initial gallery request loads page `1` using the selected `per_page` value.
 - A `Load more` button fetches the next page and appends entries to the bottom of the existing list.
 - The `Load more` button is automatically hidden when `X-Page` is equal to `X-Total-Pages` (or when no pages are available).
