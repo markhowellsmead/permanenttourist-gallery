@@ -23,6 +23,10 @@ h1 {
 
 #settings-panel {
 	margin-bottom: 1rem;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.6rem;
 }
 
 #settings-panel label {
@@ -31,6 +35,37 @@ h1 {
 	gap: 0.5rem;
 	font-size: 0.9rem;
 	color: #444;
+}
+
+#settings-panel select,
+#settings-panel button,
+#load-more-button {
+	padding: 0.4rem 0.6rem;
+	font-size: 0.9rem;
+	border: 1px solid #bbb;
+	border-radius: 0.35rem;
+	background: #fff;
+	color: #222;
+}
+
+#settings-panel button,
+#load-more-button {
+	cursor: pointer;
+}
+
+#settings-panel button:hover,
+#load-more-button:hover {
+	background: #f2f2f2;
+}
+
+#load-more-container {
+	margin: 1.25rem 0 2rem;
+	text-align: center;
+}
+
+#load-more-button[disabled] {
+	opacity: 0.6;
+	cursor: not-allowed;
 }
 
 #image-list {

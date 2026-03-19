@@ -148,11 +148,88 @@ final class MediaApiService
 			}));
 		}
 
-		$data = $this->flattenImageData($data);
+		$data = $this->sortByCaptureTimestampDesc($data);
+
+		$perPage = $this->parsePerPage($queryParams['per_page'] ?? null);
+		$page = $this->parsePage($queryParams['page'] ?? null);
+		$total = count($data);
+		$totalPages = $total > 0 ? (int) ceil($total / $perPage) : 0;
+
+		header('X-Total: ' . $total);
+		header('X-Total-Pages: ' . $totalPages);
+		header('X-Page: ' . $page);
+
+		$offset = ($page - 1) * $perPage;
+		$pagedData = array_slice($data, $offset, $perPage);
+
+		$data = $this->flattenImageData($pagedData);
 		echo json_encode(
 			$data,
 			JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
 		);
+	}
+
+	/**
+	 * Parse and validate per_page query parameter.
+	 *
+	 * Uses WordPress-style defaults/caps: default 20, max 100.
+	 *
+	 * @param mixed $value Query parameter value
+	 *
+	 * @return int
+	 */
+	private function parsePerPage($value): int
+	{
+		$perPage = (int) $value;
+		if ($perPage <= 0) {
+			$perPage = 20;
+		}
+
+		return min($perPage, 100);
+	}
+
+	/**
+	 * Parse and validate page query parameter.
+	 *
+	 * @param mixed $value Query parameter value
+	 *
+	 * @return int
+	 */
+	private function parsePage($value): int
+	{
+		$page = (int) $value;
+		return $page > 0 ? $page : 1;
+	}
+
+	/**
+	 * Sort media records by capture timestamp descending.
+	 *
+	 * @param array<int, mixed> $items
+	 *
+	 * @return array<int, mixed>
+	 */
+	private function sortByCaptureTimestampDesc(array $items): array
+	{
+		usort($items, function ($a, $b): int {
+			$aTs = $this->getCaptureTimestamp($a);
+			$bTs = $this->getCaptureTimestamp($b);
+
+			if ($aTs === null && $bTs === null) {
+				return 0;
+			}
+
+			if ($aTs === null) {
+				return 1;
+			}
+
+			if ($bTs === null) {
+				return -1;
+			}
+
+			return $bTs <=> $aTs;
+		});
+
+		return $items;
 	}
 
 	/**
@@ -396,5 +473,65 @@ final class MediaApiService
 		}
 
 		return null;
+	}
+
+	/**
+	 * Extract capture timestamp from EXIF/IPTC metadata.
+	 *
+	 * @param mixed $item Image metadata item
+	 *
+	 * @return int|null UNIX timestamp or null when unavailable
+	 */
+	private function getCaptureTimestamp($item): ?int
+	{
+		if (!is_array($item)) {
+			return null;
+		}
+
+		$exifCandidates = [
+			$item['exif']['EXIF']['DateTimeOriginal'] ?? null,
+			$item['exif']['EXIF']['DateTimeDigitized'] ?? null,
+			$item['exif']['IFD0']['DateTime'] ?? null,
+		];
+
+		foreach ($exifCandidates as $candidate) {
+			$candidateString = $this->getStringValue($candidate);
+			if ($candidateString === null) {
+				continue;
+			}
+
+			$dt = \DateTime::createFromFormat('Y:m:d H:i:s', $candidateString)
+				?: \DateTime::createFromFormat('Y-m-d H:i:s', $candidateString);
+
+			if ($dt instanceof \DateTime) {
+				return $dt->getTimestamp();
+			}
+		}
+
+		$iptcDate = $this->getStringValue($item['iptc']['date_created']['value'][0] ?? null);
+		$iptcTime = $this->getStringValue($item['iptc']['time_created']['value'][0] ?? null);
+
+		if ($iptcDate === null || preg_match('/^\d{8}$/', $iptcDate) !== 1) {
+			return null;
+		}
+
+		$year = substr($iptcDate, 0, 4);
+		$month = substr($iptcDate, 4, 2);
+		$day = substr($iptcDate, 6, 2);
+
+		$time = '00:00:00';
+		if ($iptcTime !== null && preg_match('/^\d{4,6}$/', $iptcTime) === 1) {
+			$h = substr($iptcTime, 0, 2) ?: '00';
+			$i = substr($iptcTime, 2, 2) ?: '00';
+			$s = strlen($iptcTime) === 6 ? substr($iptcTime, 4, 2) : '00';
+			$time = sprintf('%02d:%02d:%02d', (int) $h, (int) $i, (int) $s);
+		}
+
+		$dt = \DateTime::createFromFormat('Y-m-d H:i:s', "{$year}-{$month}-{$day} {$time}");
+		if (!$dt instanceof \DateTime) {
+			return null;
+		}
+
+		return $dt->getTimestamp();
 	}
 }

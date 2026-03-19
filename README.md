@@ -152,6 +152,10 @@ Rules:
 - Reads `media/media.json` (which contains complete IPTC/EXIF metadata)
 - Filters to only essential fields used by frontend
 - Flattens nested IPTC/EXIF structure into simple top-level properties
+- Supports pagination query parameters:
+  - `page` (1-based page number, default `1`)
+  - `per_page` (items per page, default `20`, maximum `100`)
+- Sorts records by capture timestamp (newest first) before pagination
 - Supports optional filtering via:
     - `month_year` in `yyyy-mm` format (for example `/api?month_year=2024-03`)
   - `year` in `yyyy` format (for example `/api?year=2024`)
@@ -161,9 +165,11 @@ Rules:
 Example filter combinations:
 
 - `/api`
+- `/api?page=2&per_page=40`
 - `/api?month_year=2017-09`
 - `/api?country=Scotland`
 - `/api?country=Scotland&month_year=2017-09`
+- `/api?country=Scotland&month_year=2017-09&page=3&per_page=20`
 
 You can also use the readable path form for the year filter. Examples:
 
@@ -184,6 +190,7 @@ Examples using the readable path form:
 - `/api/filter/location/austria`
 - `/api/filter/location/austria/month_year/2024-03`
 - `/api/filter/month_year/2017-09/location/scotland`
+- `/api/filter/location/austria/month_year/2024-03/?page=2&per_page=40`
 
 Canonical URLs and redirects:
 
@@ -197,6 +204,12 @@ Examples of redirects performed by the API:
 
   - `/api/filter/location/Austria` → `/api/filter/location/austria` (301)
   - `/api/filter/Country/Spiez%20Valley` → `/api/filter/location/spiez+valley` (301)
+
+Pagination response headers (WordPress-style):
+
+- `X-Total`: total number of matching records across all pages
+- `X-Total-Pages`: total number of pages for the current `per_page`
+- `X-Page`: current response page
 
 ### Flattened API response structure
 
@@ -222,6 +235,15 @@ Note: The API response formats EXIF and IPTC date/time values as `YYYY-MM-DD HH:
 - `height`: image height in pixels
 
 This flattened structure simplifies frontend code and reduces payload size by ~62% compared to the nested structure.
+
+## Frontend pagination behavior
+
+The list UI now provides a `Per page` dropdown with options `20`, `40`, `60`, and `100`.
+
+- The selected value is persisted in `localStorage` under `gallery.perPage`.
+- The initial gallery request loads page `1` using the selected `per_page` value.
+- A `Load more` button fetches the next page and appends entries to the bottom of the existing list.
+- The `Load more` button is automatically hidden when `X-Page` is equal to `X-Total-Pages` (or when no pages are available).
 
 Possible error responses:
 

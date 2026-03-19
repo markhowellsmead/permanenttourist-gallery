@@ -170,9 +170,17 @@ function initResponsiveTargetHeight() {
 }
 
 const SHOW_CAPTIONS_STORAGE_KEY = 'gallery.showCaptions';
+const PER_PAGE_STORAGE_KEY = 'gallery.perPage';
+const PER_PAGE_OPTIONS = [20, 40, 60, 100];
 const DEFAULT_PAGE_TITLE = document.title;
 let selectedMonthYear = '';
 let selectedCountry = '';
+let selectedPerPage = 20;
+let currentPage = 1;
+let totalPages = 0;
+let totalImages = 0;
+let isLoadingPage = false;
+let filtersInitialized = false;
 
 function setShowCaptionsEnabled(enabled) {
 	document.body.classList.toggle('show-captions', enabled);
@@ -181,6 +189,11 @@ function setShowCaptionsEnabled(enabled) {
 function createCaptionSettingsPanel() {
 	const status = document.getElementById('status');
 	if (!status || !status.parentNode) {
+		return null;
+	}
+
+	const imageList = document.getElementById('image-list');
+	if (!(imageList instanceof HTMLElement) || !imageList.parentNode) {
 		return null;
 	}
 
@@ -222,6 +235,20 @@ function createCaptionSettingsPanel() {
 	allCountriesOption.textContent = 'All countries and regions';
 	countrySelect.appendChild(allCountriesOption);
 
+	const perPageLabel = document.createElement('label');
+	perPageLabel.setAttribute('for', 'per-page-select');
+	perPageLabel.textContent = 'Per page';
+
+	const perPageSelect = document.createElement('select');
+	perPageSelect.id = 'per-page-select';
+
+	for (const perPageOption of PER_PAGE_OPTIONS) {
+		const option = document.createElement('option');
+		option.value = String(perPageOption);
+		option.textContent = String(perPageOption);
+		perPageSelect.appendChild(option);
+	}
+
 	const resetButton = document.createElement('button');
 	resetButton.type = 'button';
 	resetButton.id = 'filters-reset-button';
@@ -232,16 +259,37 @@ function createCaptionSettingsPanel() {
 	panel.appendChild(monthYearSelect);
 	panel.appendChild(countryLabel);
 	panel.appendChild(countrySelect);
+	panel.appendChild(perPageLabel);
+	panel.appendChild(perPageSelect);
 	panel.appendChild(resetButton);
 
 	status.parentNode.insertBefore(panel, status);
+
+	const loadMoreContainer = document.createElement('div');
+	loadMoreContainer.id = 'load-more-container';
+	loadMoreContainer.hidden = true;
+
+	const loadMoreButton = document.createElement('button');
+	loadMoreButton.type = 'button';
+	loadMoreButton.id = 'load-more-button';
+	loadMoreButton.textContent = 'Load more';
+
+	loadMoreContainer.appendChild(loadMoreButton);
+	imageList.parentNode.insertBefore(loadMoreContainer, imageList.nextSibling);
 
 	return {
 		checkbox,
 		monthYearSelect,
 		countrySelect,
+		perPageSelect,
 		resetButton,
+		loadMoreButton,
 	};
+}
+
+function normalizePerPage(value) {
+	const parsed = Number.parseInt(String(value), 10);
+	return PER_PAGE_OPTIONS.includes(parsed) ? parsed : 20;
 }
 
 function initSettingsPanel() {
@@ -253,7 +301,9 @@ function initSettingsPanel() {
 	const checkbox = settings.checkbox;
 	const monthYearSelect = settings.monthYearSelect;
 	const countrySelect = settings.countrySelect;
+	const perPageSelect = settings.perPageSelect;
 	const resetButton = settings.resetButton;
+	const loadMoreButton = settings.loadMoreButton;
 	if (!(checkbox instanceof HTMLInputElement)) {
 		return;
 	}
@@ -267,6 +317,16 @@ function initSettingsPanel() {
 
 	checkbox.checked = enabled;
 	setShowCaptionsEnabled(enabled);
+
+	try {
+		selectedPerPage = normalizePerPage(localStorage.getItem(PER_PAGE_STORAGE_KEY));
+	} catch (_error) {
+		selectedPerPage = 20;
+	}
+
+	if (perPageSelect instanceof HTMLSelectElement) {
+		perPageSelect.value = String(selectedPerPage);
+	}
 
 	checkbox.addEventListener('change', () => {
 		const isEnabled = checkbox.checked;
@@ -288,6 +348,24 @@ function initSettingsPanel() {
 		countrySelect.addEventListener('change', () => {
 			selectedCountry = countrySelect.value;
 			run();
+		});
+	}
+
+	if (perPageSelect instanceof HTMLSelectElement) {
+		perPageSelect.addEventListener('change', () => {
+			selectedPerPage = normalizePerPage(perPageSelect.value);
+
+			try {
+				localStorage.setItem(PER_PAGE_STORAGE_KEY, String(selectedPerPage));
+			} catch (_error) {}
+
+			run();
+		});
+	}
+
+	if (loadMoreButton instanceof HTMLButtonElement) {
+		loadMoreButton.addEventListener('click', () => {
+			loadMore();
 		});
 	}
 
@@ -443,7 +521,17 @@ function populateCountryFilterOptions(items) {
 	countrySelect.value = existingValue;
 }
 
-async function fetchImageData(monthYear = '', country = '') {
+function readPositiveIntHeader(headers, name, fallback = 0) {
+	const raw = headers.get(name);
+	if (typeof raw !== 'string') {
+		return fallback;
+	}
+
+	const parsed = Number.parseInt(raw, 10);
+	return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+async function fetchImageData(monthYear = '', country = '', page = 1, perPage = 20) {
 	let requestUrl;
 	const origin = window.location.origin;
 
@@ -468,7 +556,11 @@ async function fetchImageData(monthYear = '', country = '') {
 		requestUrl = `${origin}/${parts.join('/')}/`;
 	}
 
-	const response = await fetch(requestUrl, {
+	const request = new URL(requestUrl);
+	request.searchParams.set('page', String(page));
+	request.searchParams.set('per_page', String(perPage));
+
+	const response = await fetch(request.toString(), {
 		method: 'GET',
 	});
 
@@ -481,12 +573,47 @@ async function fetchImageData(monthYear = '', country = '') {
 		throw new Error('Unexpected API response format.');
 	}
 
-	return data;
+	const responsePage = readPositiveIntHeader(response.headers, 'x-page', page);
+	const responseTotalPages = readPositiveIntHeader(response.headers, 'x-total-pages', 0);
+	const responseTotal = readPositiveIntHeader(response.headers, 'x-total', data.length);
+
+	return {
+		data,
+		page: responsePage,
+		totalPages: responseTotalPages,
+		total: responseTotal,
+	};
 }
 
-function renderImages(images) {
+async function fetchAllImagesForFilters() {
+	const allItems = [];
+	let page = 1;
+	let lastPage = 1;
+
+	while (page <= lastPage) {
+		const response = await fetchImageData('', '', page, 100);
+		allItems.push(...response.data);
+		lastPage = Math.max(response.totalPages, 1);
+
+		if (response.totalPages === 0) {
+			break;
+		}
+
+		page += 1;
+	}
+
+	return allItems;
+}
+
+function renderImages(images, append = false) {
 	const list = document.getElementById('image-list');
-	list.innerHTML = '';
+	if (!(list instanceof HTMLElement)) {
+		return;
+	}
+
+	if (!append) {
+		list.innerHTML = '';
+	}
 
 	for (const item of images) {
 		const li = document.createElement('li');
@@ -571,69 +698,151 @@ function renderImages(images) {
 	}
 }
 
+function updateLoadMoreButton() {
+	const container = document.getElementById('load-more-container');
+	const button = document.getElementById('load-more-button');
+	if (!(container instanceof HTMLElement) || !(button instanceof HTMLButtonElement)) {
+		return;
+	}
+
+	const hasMorePages = currentPage < totalPages;
+	const remaining = Math.max(totalImages - allImagesCache.length, 0);
+	const nextLoadCount = Math.min(selectedPerPage, remaining);
+	container.hidden = !hasMorePages;
+	button.hidden = !hasMorePages;
+	button.disabled = isLoadingPage || !hasMorePages;
+
+	if (isLoadingPage) {
+		button.textContent = 'Loading…';
+		return;
+	}
+
+	if (!hasMorePages || nextLoadCount <= 0) {
+		button.textContent = 'Load more';
+		return;
+	}
+
+	const noun = nextLoadCount === 1 ? 'image' : 'images';
+	button.textContent = `Load ${nextLoadCount} more ${noun}`;
+}
+
+function updateStatusText() {
+	const status = document.getElementById('status');
+	if (!(status instanceof HTMLElement)) {
+		return;
+	}
+
+	const imageCount = allImagesCache.length;
+	const imageNoun = imageCount === 1 ? 'image' : 'images';
+	const totalNoun = totalImages === 1 ? 'image' : 'images';
+	const monthYearLabel = selectedMonthYear !== '' ? formatMonthYearKey(selectedMonthYear) : '';
+
+	if (imageCount === 0) {
+		if (selectedCountry !== '' && selectedMonthYear !== '') {
+			status.textContent = `No images found from ${selectedCountry} in ${monthYearLabel}.`;
+		} else if (selectedCountry !== '') {
+			status.textContent = `No images found from ${selectedCountry}.`;
+		} else if (selectedMonthYear !== '') {
+			status.textContent = `No images found in ${monthYearLabel}.`;
+		} else {
+			status.textContent = 'No images found.';
+		}
+		return;
+	}
+
+	const imageLabel = `Showing ${imageCount} of ${totalImages} ${totalNoun}`;
+
+	if (selectedCountry !== '' && selectedMonthYear !== '') {
+		status.textContent = `${imageLabel} from ${selectedCountry} in ${monthYearLabel}.`;
+	} else if (selectedCountry !== '') {
+		status.textContent = `${imageLabel} from ${selectedCountry}.`;
+	} else if (selectedMonthYear !== '') {
+		status.textContent = `${imageLabel} in ${monthYearLabel}.`;
+	} else {
+		status.textContent = `${imageLabel}.`;
+	}
+}
+
+function toItemsWithCaptureTs(items) {
+	return items.map((item) => ({
+		...item,
+		captureTs: getCaptureTimestamp(item),
+	}));
+}
+
 async function run() {
 	const status = document.getElementById('status');
+	if (!(status instanceof HTMLElement)) {
+		return;
+	}
 
 	try {
-		const data = await fetchImageData(selectedMonthYear, selectedCountry);
+		currentPage = 1;
+		totalPages = 0;
+		totalImages = 0;
+		allImagesCache = [];
+		renderImages([]);
 
-		const monthYearSelect = document.getElementById('month-year-filter-select');
-		if (monthYearSelect instanceof HTMLSelectElement && monthYearSelect.options.length <= 1) {
-			populateMonthYearFilterOptions(data);
+		if (!filtersInitialized) {
+			const filterData = await fetchAllImagesForFilters();
+			populateMonthYearFilterOptions(filterData);
+			populateCountryFilterOptions(filterData);
+			filtersInitialized = true;
 		}
 
-		const countrySelect = document.getElementById('country-filter-select');
-		if (countrySelect instanceof HTMLSelectElement && countrySelect.options.length <= 1) {
-			populateCountryFilterOptions(data);
-		}
+		isLoadingPage = true;
+		updateLoadMoreButton();
+		const response = await fetchImageData(selectedMonthYear, selectedCountry, currentPage, selectedPerPage);
+		isLoadingPage = false;
 
-		const withCaptureDates = data.map((item) => ({
-			...item,
-			captureTs: getCaptureTimestamp(item),
-		}));
+		currentPage = Math.max(response.page, 1);
+		totalPages = Math.max(response.totalPages, 0);
+		totalImages = Math.max(response.total, 0);
 
-		withCaptureDates.sort((a, b) => {
-			const aTs = a.captureTs;
-			const bTs = b.captureTs;
-
-			if (aTs === null && bTs === null) return 0;
-			if (aTs === null) return 1;
-			if (bTs === null) return -1;
-			return bTs - aTs;
-		});
-
-		// Cache all images for SPA navigation
+		const withCaptureDates = toItemsWithCaptureTs(response.data);
 		allImagesCache = withCaptureDates;
 
-		renderImages(withCaptureDates);
-		const imageCount = withCaptureDates.length;
-		const imageNoun = imageCount === 1 ? 'image' : 'images';
-		const imageLabel = `Found ${imageCount} ${imageNoun}`;
-		const monthYearLabel = selectedMonthYear !== '' ? formatMonthYearKey(selectedMonthYear) : '';
-
-		if (imageCount === 0) {
-			if (selectedCountry !== '' && selectedMonthYear !== '') {
-				status.textContent = `No images found from ${selectedCountry} in ${monthYearLabel}.`;
-			} else if (selectedCountry !== '') {
-				status.textContent = `No images found from ${selectedCountry}.`;
-			} else if (selectedMonthYear !== '') {
-				status.textContent = `No images found in ${monthYearLabel}.`;
-			} else {
-				status.textContent = 'No images found.';
-			}
-		} else {
-			if (selectedCountry !== '' && selectedMonthYear !== '') {
-				status.textContent = `${imageLabel} from ${selectedCountry} in ${monthYearLabel}.`;
-			} else if (selectedCountry !== '') {
-				status.textContent = `${imageLabel} from ${selectedCountry}.`;
-			} else if (selectedMonthYear !== '') {
-				status.textContent = `${imageLabel} in ${monthYearLabel}.`;
-			} else {
-				status.textContent = `${imageLabel}.`;
-			}
-		}
+		renderImages(withCaptureDates, false);
+		updateStatusText();
+		updateLoadMoreButton();
 	} catch (error) {
+		isLoadingPage = false;
+		updateLoadMoreButton();
 		status.textContent = `Failed to load images: ${error.message}`;
+	}
+}
+
+async function loadMore() {
+	if (isLoadingPage || currentPage >= totalPages) {
+		return;
+	}
+
+	const status = document.getElementById('status');
+	if (!(status instanceof HTMLElement)) {
+		return;
+	}
+
+	try {
+		isLoadingPage = true;
+		updateLoadMoreButton();
+
+		const nextPage = currentPage + 1;
+		const response = await fetchImageData(selectedMonthYear, selectedCountry, nextPage, selectedPerPage);
+
+		currentPage = Math.max(response.page, nextPage);
+		totalPages = Math.max(response.totalPages, totalPages);
+		totalImages = Math.max(response.total, totalImages);
+
+		const additionalItems = toItemsWithCaptureTs(response.data);
+		allImagesCache = [...allImagesCache, ...additionalItems];
+		renderImages(additionalItems, true);
+
+		updateStatusText();
+	} catch (error) {
+		status.textContent = `Failed to load more images: ${error.message}`;
+	} finally {
+		isLoadingPage = false;
+		updateLoadMoreButton();
 	}
 }
 
