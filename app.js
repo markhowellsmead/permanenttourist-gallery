@@ -1,5 +1,9 @@
 const LOCALE = 'en-GB';
 
+function getRootEl() {
+	if (typeof document === 'undefined') return null;
+	return document.querySelector('.wp-pt-gallery') || document.body;
+}
 function parseExifDateTime(value) {
 	if (typeof value !== 'string') {
 		return null;
@@ -158,7 +162,8 @@ function applyTargetHeightCssVariable() {
 		return;
 	}
 
-	document.body.style.setProperty('--grid-target-height', `${getTargetHeight()}px`);
+	const root = getRootEl();
+	if (root) root.style.setProperty('--grid-target-height', `${getTargetHeight()}px`);
 }
 
 function initResponsiveTargetHeight() {
@@ -186,7 +191,8 @@ let closeSettingsDrawer = () => {};
 let isSettingsDrawerOpen = () => false;
 
 function setShowCaptionsEnabled(enabled) {
-	document.body.classList.toggle('show-captions', enabled);
+	const root = getRootEl();
+	if (root) root.classList.toggle('wp-pt-gallery--show-captions', enabled);
 }
 
 function createCaptionSettingsPanel() {
@@ -291,7 +297,8 @@ function createCaptionSettingsPanel() {
 	let isSwipingDrawer = false;
 
 	status.parentNode.insertBefore(drawer, status);
-	document.body.appendChild(backdrop);
+	const root = getRootEl();
+	if (root) root.appendChild(backdrop);
 
 	const isMobileDrawerMode = () => {
 		return typeof window !== 'undefined' && window.matchMedia('(max-width: 48rem)').matches;
@@ -341,7 +348,8 @@ function createCaptionSettingsPanel() {
 	};
 
 	const setSettingsOpen = (isOpen) => {
-		document.body.classList.toggle('settings-open', isOpen);
+		const root = getRootEl();
+		if (root) root.classList.toggle('wp-pt-gallery--settings-open', isOpen);
 		backdrop.hidden = !isOpen;
 		resetDrawerDragStyles();
 		clearSwipeHintTimer();
@@ -368,7 +376,9 @@ function createCaptionSettingsPanel() {
 
 	if (settingsToggle instanceof HTMLButtonElement) {
 		settingsToggle.addEventListener('click', () => {
-			if (document.body.classList.contains('settings-open')) {
+			const root = getRootEl();
+			const isOpen = root && root.classList.contains('wp-pt-gallery--settings-open');
+			if (isOpen) {
 				closeSettings();
 			} else {
 				openSettings();
@@ -381,7 +391,8 @@ function createCaptionSettingsPanel() {
 	drawer.addEventListener(
 		'touchstart',
 		(event) => {
-			if (!document.body.classList.contains('settings-open') || !isMobileDrawerMode()) {
+			const root = getRootEl();
+			if (!(root && root.classList.contains('wp-pt-gallery--settings-open')) || !isMobileDrawerMode()) {
 				return;
 			}
 
@@ -489,8 +500,12 @@ function createCaptionSettingsPanel() {
 		loadMoreButton,
 		openSettings,
 		closeSettings,
-		isSettingsOpen: () => document.body.classList.contains('settings-open'),
-		refreshSettingsToggleLabel: () => updateSettingsToggleLabel(document.body.classList.contains('settings-open')),
+		isSettingsOpen: () => {
+			const root = getRootEl();
+			return !!(root && root.classList.contains('wp-pt-gallery--settings-open'));
+		},
+		refreshSettingsToggleLabel: () =>
+			updateSettingsToggleLabel(!!(getRootEl() && getRootEl().classList.contains('wp-pt-gallery--settings-open'))),
 	};
 }
 
@@ -884,7 +899,7 @@ function renderImages(images, append = false) {
 
 	for (const item of images) {
 		const li = document.createElement('li');
-		li.className = 'image-item c-grid500__item';
+		li.className = 'wp-pt-gallery__image-item c-grid500__item';
 
 		const metrics = getGridMetrics(item);
 		li.style.flexGrow = String(metrics.flexGrow);
@@ -908,7 +923,7 @@ function renderImages(images, append = false) {
 		img.loading = 'lazy';
 
 		const meta = document.createElement('div');
-		meta.className = 'meta';
+		meta.className = 'wp-pt-gallery__meta';
 
 		const date = document.createElement('div');
 		date.className = 'date';
@@ -932,7 +947,7 @@ function renderImages(images, append = false) {
 		meta.appendChild(date);
 
 		const metaSecondary = document.createElement('div');
-		metaSecondary.className = 'meta-secondary';
+		metaSecondary.className = 'wp-pt-gallery__meta-secondary';
 
 		const secondaryDate = document.createElement('div');
 		secondaryDate.className = 'date';
@@ -1309,7 +1324,7 @@ function showDetailView(photoId) {
 	detailView.innerHTML = '';
 
 	const closeButton = document.createElement('button');
-	closeButton.className = 'detail-view__close';
+	closeButton.className = 'wp-pt-gallery__detail-view-close';
 	closeButton.textContent = '× Close';
 	closeButton.setAttribute('aria-label', 'Close detail view');
 	closeButton.addEventListener('click', () => {
@@ -1321,11 +1336,11 @@ function showDetailView(photoId) {
 	const hasAnyNeighbor = previousItem !== null || nextItem !== null;
 
 	const nav = document.createElement('div');
-	nav.className = 'detail-view__nav';
+	nav.className = 'wp-pt-gallery__detail-view-nav';
 	nav.hidden = !hasAnyNeighbor;
 
 	const previousButton = document.createElement('button');
-	previousButton.className = 'detail-view__nav-button detail-view__nav-button--previous';
+	previousButton.className = 'wp-pt-gallery__detail-view-nav-button wp-pt-gallery__detail-view-nav-button--previous';
 	previousButton.type = 'button';
 	previousButton.textContent = '← Previous';
 	previousButton.setAttribute('aria-label', 'Show previous image');
@@ -1342,7 +1357,7 @@ function showDetailView(photoId) {
 	}
 
 	const nextButton = document.createElement('button');
-	nextButton.className = 'detail-view__nav-button detail-view__nav-button--next';
+	nextButton.className = 'wp-pt-gallery__detail-view-nav-button wp-pt-gallery__detail-view-nav-button--next';
 	nextButton.type = 'button';
 	nextButton.textContent = 'Next →';
 	nextButton.setAttribute('aria-label', 'Show next image');
@@ -1362,26 +1377,26 @@ function showDetailView(photoId) {
 	nav.appendChild(nextButton);
 
 	const imageContainer = document.createElement('div');
-	imageContainer.className = 'detail-view__image-container';
+	imageContainer.className = 'wp-pt-gallery__detail-view-image-container';
 
 	const img = document.createElement('img');
-	img.className = 'detail-view__image';
+	img.className = 'wp-pt-gallery__detail-view-image';
 	img.src = image.url;
 	img.alt = getImageTitle(image);
 
 	const caption = document.createElement('div');
-	caption.className = 'detail-view__caption';
+	caption.className = 'wp-pt-gallery__detail-view-caption';
 
 	const title = document.createElement('h2');
-	title.className = 'detail-view__title';
+	title.className = 'wp-pt-gallery__detail-view-title';
 	title.textContent = getImageTitle(image);
 
 	const location = document.createElement('div');
-	location.className = 'detail-view__location';
+	location.className = 'wp-pt-gallery__detail-view-location';
 	location.textContent = getImageLocation(image);
 
 	const date = document.createElement('div');
-	date.className = 'detail-view__date';
+	date.className = 'wp-pt-gallery__detail-view-date';
 	date.textContent = formatTimestamp(image.captureTs);
 
 	const tags = getImageTags(image);
@@ -1392,7 +1407,7 @@ function showDetailView(photoId) {
 
 	if (tags && tags.trim() !== '') {
 		const tagsDiv = document.createElement('div');
-		tagsDiv.className = 'detail-view__tags';
+		tagsDiv.className = 'wp-pt-gallery__detail-view-tags';
 		tagsDiv.textContent = tags;
 		caption.appendChild(tagsDiv);
 	}
@@ -1412,7 +1427,8 @@ function showDetailView(photoId) {
 	});
 
 	detailView.hidden = false;
-	document.body.style.overflow = 'hidden';
+	const _root = getRootEl();
+	if (_root) _root.style.overflow = 'hidden';
 
 	// Focus close button for accessibility
 	closeButton.focus();
@@ -1424,7 +1440,8 @@ function hideDetailView() {
 		detailView.hidden = true;
 		detailView.innerHTML = '';
 	}
-	document.body.style.overflow = '';
+	const _root = getRootEl();
+	if (_root) _root.style.overflow = '';
 	document.title = DEFAULT_PAGE_TITLE;
 	clearDetailViewMetaTags();
 }

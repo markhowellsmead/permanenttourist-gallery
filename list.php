@@ -117,16 +117,16 @@ if ($photoData !== null && $photoId !== null) {
 	<?php endif; ?>
 </head>
 
-<body>
-	<header id="page-header" class="page-header">
-		<div class="page-header__title-group">
+<body class="wp-pt-gallery">
+	<header id="page-header" class="wp-pt-gallery__page-header">
+		<div class="wp-pt-gallery__page-header-title-group">
 			<h1>Permanent Tourist photographic archive</h1>
 			<p>Photos by Mark Howells-Mead. (<a href="https://www.permanenttourist.ch/">Main website</a>)</p>
 		</div>
 		<button
 			type="button"
 			id="settings-toggle"
-			class="settings-toggle"
+			class="wp-pt-gallery__settings-toggle"
 			aria-expanded="false"
 			aria-controls="settings-drawer">
 			Open settings
@@ -134,7 +134,7 @@ if ($photoData !== null && $photoId !== null) {
 	</header>
 	<div id="status">Loading…</div>
 	<ul id="image-list"></ul>
-	<div id="detail-view" class="detail-view" hidden></div>
+	<div id="detail-view" class="wp-pt-gallery__detail-view" hidden></div>
 
 	<?php
 	// Inline JS from app.js while keeping the source file on disk.

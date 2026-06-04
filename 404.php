@@ -29,7 +29,7 @@ $errorCssUrl = AssetHelper::cacheBustedAsset('404.css', true);
 	<link rel="stylesheet" href="<?php echo htmlspecialchars($errorCssUrl, ENT_QUOTES, 'UTF-8'); ?>">
 </head>
 
-<body>
+<body class="wp-pt-gallery">
 	<main>
 		<h1>404 — Page not found</h1>
 		<p>The requested path does not exist. <a href="/">Go back to the gallery</a>.</p>
