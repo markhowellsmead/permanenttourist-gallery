@@ -2,7 +2,7 @@
 
 This project scans JPEG images in `media/`, extracts IPTC and EXIF metadata, writes a JSON index, and serves a browser-based gallery view that loads data from a REST-style API.
 
-Version: 20260604-1600
+Version: 20260604-1700
 
 ## Overview
 
@@ -11,6 +11,7 @@ Main parts:
 - `build.php`: scans images and generates `media/media.json`, `sitemap.xml`, and `photo-sitemap.xml`
 - `api.php`: GET-only JSON endpoint returning flattened data structure plus `/api/meta` filter metadata
   - Note: API now provides CORS headers (`Access-Control-Allow-Origin`) to allow cross-origin requests from browsers.
+  - Change: image `url` fields returned by the API are now absolute URLs (including scheme and host) instead of relative paths.
 - `index.php`: front controller for dynamic routes (`/api`, `/build`, `/sitemap`) and default list page
 - `list.php`: HTML shell for the list/grid UI. CSS and JS are inlined into the HTML for simpler deployment while the original `list.css` and `app.js` remain available on disk.
 - `functions.php`: bootstrap file which registers autoloading for namespaced classes and loads `.env` file

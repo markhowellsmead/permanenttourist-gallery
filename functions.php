@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 // Project version identifier (YYYYMMDD-HHMM)
 if (!defined('PT_GALLERY_VERSION')) {
-	define('PT_GALLERY_VERSION', '20260604-1600');
+	define('PT_GALLERY_VERSION', '20260604-1700');
 }
 
 if (realpath((string) ($_SERVER['SCRIPT_FILENAME'] ?? '')) === __FILE__) {

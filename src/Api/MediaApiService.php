@@ -399,13 +399,13 @@ final class MediaApiService
 			return '';
 		}
 
-		$path = parse_url($url, PHP_URL_PATH);
-		if (!is_string($path) || $path === '') {
+		$parsedPath = parse_url($url, PHP_URL_PATH);
+		if (!is_string($parsedPath) || $parsedPath === '') {
 			return $url;
 		}
 
 		$projectRoot = dirname(__DIR__, 2);
-		$filePath = $projectRoot . '/' . ltrim($path, '/');
+		$filePath = $projectRoot . '/' . ltrim($parsedPath, '/');
 
 		if (!is_file($filePath)) {
 			return $url;
@@ -417,7 +417,24 @@ final class MediaApiService
 		}
 
 		$separator = str_contains($url, '?') ? '&' : '?';
-		return $url . $separator . 'v=' . $modifiedAt;
+		$versionedPath = $url . $separator . 'v=' . $modifiedAt;
+
+		// If the URL is already absolute (has a host), return as-is.
+		$host = $_SERVER['HTTP_HOST'] ?? null;
+		$hasHost = parse_url($url, PHP_URL_HOST) !== null;
+		if ($hasHost || $host === null) {
+			return $versionedPath;
+		}
+
+		// Determine scheme (prefer forwarded/proxy headers when present)
+		$scheme = 'http';
+		if ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+			|| (isset($_SERVER['REQUEST_SCHEME']) && $_SERVER['REQUEST_SCHEME'] === 'https')
+			|| (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')) {
+			$scheme = 'https';
+		}
+
+		return $scheme . '://' . $host . $versionedPath;
 	}
 
 	/**
