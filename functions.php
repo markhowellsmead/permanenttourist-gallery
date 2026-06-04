@@ -11,6 +11,11 @@
 
 declare(strict_types=1);
 
+// Project version identifier (YYYYMMDD-HHMM)
+if (!defined('PT_GALLERY_VERSION')) {
+	define('PT_GALLERY_VERSION', '20260604-1600');
+}
+
 if (realpath((string) ($_SERVER['SCRIPT_FILENAME'] ?? '')) === __FILE__) {
 	http_response_code(403);
 	header('Content-Type: text/plain; charset=utf-8');

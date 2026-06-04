@@ -21,13 +21,24 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
 
+// CORS: allow requests from other origins (including browser fetches)
+// Keep this permissive by default; restrict if you need tighter control.
+$method = (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Accept, X-Requested-With');
+// Reply to preflight requests and exit early
+if ($method === 'OPTIONS') {
+	http_response_code(204);
+	exit;
+}
+
 
 $jsonFile = __DIR__ . '/media/media.json';
 
 $service = new MediaApiService();
 
 // Build parameters from a readable URL such as: /api/filter/location/spiez/
-$method = (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $params = $_GET;
 
 $uri = $_SERVER['REQUEST_URI'] ?? '/';
