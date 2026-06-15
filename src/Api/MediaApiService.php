@@ -229,9 +229,24 @@ final class MediaApiService
 			// Search filter: match full words in title (`object_name`) or `keywords`
 			$searchFilter = trim((string) ($queryParams['search'] ?? ''));
 			if ($searchFilter !== '') {
-				// Use Unicode-aware, case-insensitive full-word match
-				$escaped = preg_quote($searchFilter, '/');
-				$pattern = '/\b' . $escaped . '\b/iu';
+				// Support wildcard '*' in search: if present, convert '*' to '.*'
+				// and match anywhere; otherwise require whole-word matches.
+				if (strpos($searchFilter, '*') !== false) {
+					$chars = preg_split('//u', $searchFilter, -1, PREG_SPLIT_NO_EMPTY);
+					$regex = '';
+					foreach ($chars as $ch) {
+						if ($ch === '*') {
+							$regex .= '.*';
+						} else {
+							$regex .= preg_quote($ch, '/');
+						}
+					}
+					$pattern = '/' . $regex . '/iu';
+				} else {
+					// Use Unicode-aware, case-insensitive full-word match
+					$escaped = preg_quote($searchFilter, '/');
+					$pattern = '/\b' . $escaped . '\b/iu';
+				}
 				$self = $this;
 				$data = array_values(array_filter($data, function ($item) use ($pattern, $self): bool {
 					if (!is_array($item)) {
