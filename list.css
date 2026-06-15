@@ -81,7 +81,7 @@ h1 {
 }
 
 #settings-panel select,
-#settings-panel input[type="search"],
+#settings-panel input[type='search'],
 #settings-panel button,
 #load-more-button {
 	padding: 0.4rem 0.6rem;
@@ -98,8 +98,8 @@ h1 {
 }
 
 #settings-panel button:hover,
-#settings-panel input[type="search"]:hover,
-#settings-panel input[type="search"]:focus,
+#settings-panel input[type='search']:hover,
+#settings-panel input[type='search']:focus,
 #load-more-button:hover {
 	background: #f2f2f2;
 }

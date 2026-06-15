@@ -643,7 +643,10 @@ function initSettingsPanel() {
 	) {
 		updateResetButtonVisibility = () => {
 			const hasActiveFilter =
-				monthYearSelect.value !== '' || countrySelect.value !== '' || selectedSearch !== '' || normalizePerPage(perPageSelect.value) !== DEFAULT_PER_PAGE;
+				monthYearSelect.value !== '' ||
+				countrySelect.value !== '' ||
+				selectedSearch !== '' ||
+				normalizePerPage(perPageSelect.value) !== DEFAULT_PER_PAGE;
 			resetButton.hidden = !hasActiveFilter;
 			refreshSettingsToggleLabel();
 		};
@@ -705,7 +708,6 @@ function initSettingsPanel() {
 			run();
 		});
 	}
-
 }
 
 function getLocationTerms(item) {
