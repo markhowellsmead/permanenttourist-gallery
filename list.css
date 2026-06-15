@@ -98,6 +98,8 @@ h1 {
 }
 
 #settings-panel button:hover,
+#settings-panel input[type="search"]:hover,
+#settings-panel input[type="search"]:focus,
 #load-more-button:hover {
 	background: #f2f2f2;
 }
