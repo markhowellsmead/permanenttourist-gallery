@@ -10,7 +10,7 @@ Main parts:
 
 - `build.php`: scans images and generates `media/media.json`, `sitemap.xml`, and `photo-sitemap.xml`
 - `api.php`: GET-only JSON endpoint returning flattened data structure plus `/api/meta` filter metadata
-  - Note: API now provides CORS headers (`Access-Control-Allow-Origin`) to allow cross-origin requests from browsers.
+  - Note: API provides CORS headers (`Access-Control-Allow-Origin`) and exposes pagination headers (`Access-Control-Expose-Headers: X-Total, X-Total-Pages, X-Page`) so browser clients can read pagination information.
   - Change: image `url` fields returned by the API are now absolute URLs (including scheme and host) instead of relative paths.
 - `index.php`: front controller for dynamic routes (`/api`, `/build`, `/sitemap`) and default list page
 - `list.php`: HTML shell for the list/grid UI. CSS and JS are inlined into the HTML for simpler deployment while the original `list.css` and `app.js` remain available on disk.
@@ -218,11 +218,12 @@ Examples of redirects performed by the API:
   - `/api/filter/location/Austria` → `/api/filter/location/austria` (301)
   - `/api/filter/Country/Spiez%20Valley` → `/api/filter/location/spiez+valley` (301)
 
-Pagination response headers (WordPress-style):
+ Pagination response headers (WordPress-style):
 
 - `X-Total`: total number of matching records across all pages
 - `X-Total-Pages`: total number of pages for the current `per_page`
 - `X-Page`: current response page
+ - These headers are exposed to browser clients via the `Access-Control-Expose-Headers` response header (`X-Total, X-Total-Pages, X-Page`).
 
 ### Flattened API response structure
 

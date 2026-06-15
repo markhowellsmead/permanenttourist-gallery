@@ -27,6 +27,8 @@ $method = (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Accept, X-Requested-With');
+// Expose pagination and related headers to browser clients
+header('Access-Control-Expose-Headers: X-Total, X-Total-Pages, X-Page');
 // Reply to preflight requests and exit early
 if ($method === 'OPTIONS') {
 	http_response_code(204);
