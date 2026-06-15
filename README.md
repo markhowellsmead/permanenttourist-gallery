@@ -2,7 +2,7 @@
 
 This project scans JPEG images in `media/`, extracts IPTC and EXIF metadata, writes a JSON index, and serves a browser-based gallery view that loads data from a REST-style API.
 
-Version: 20260604-1700
+Version: 20260616-0115
 
 ## Overview
 
@@ -165,9 +165,14 @@ Rules:
     - `country` (for example `/api?country=Scotland`)
     - both together (for example `/api?country=Scotland&month_year=2017-09`)
 
-     - `search` — full-word search against `title` (IPTC `object_name`), `keywords`, and location fields (`country`, `state_province`, `sublocation`, `city`) (for example `/api?search=matlock`).
-      - Behavior: matches whole words only (word-boundary anchored), case-insensitive and Unicode-aware. For example `search=matlock` will match `Matlock` and `Matlock Bath` but will NOT match partial substrings such as `mat`.
-      - Can be combined with other filters and pagination (for example `/api?search=matlock&country=England&month_year=2019-06&page=1&per_page=40`).
+    - `search` — search against `title` (IPTC `object_name`), `keywords`, and location fields (`country`, `state_province`, `sublocation`, `city`) (for example `/api?search=matlock`).
+      - Behavior:
+        - By default the search matches whole words only (word-boundary anchored), case-insensitive and Unicode-aware. For example `search=matlock` will match `Matlock` and `Matlock Bath` but will NOT match partial substrings such as `mat`.
+        - Wildcard support: include `*` in the search term to match variable text. The `*` character is translated into a regex `.*` so you can match prefixes, suffixes or fragments. Examples:
+          - `search=mat*` matches `matlock`, `matting`, `mat's`.
+          - `search=*lock` matches `matlock`, `warlock`.
+          - `search=*town*` matches any value containing `town` (for example `Scarletown` or `Old Town`).
+      - Can be combined with other filters and pagination (for example `/api?search=mat*lock&country=England&month_year=2019-06&page=1&per_page=40`).
 
 Example filter combinations:
 
