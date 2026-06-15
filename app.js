@@ -181,6 +181,7 @@ const DEFAULT_PER_PAGE = 20;
 const DEFAULT_PAGE_TITLE = document.title;
 let selectedMonthYear = '';
 let selectedCountry = '';
+let selectedSearch = '';
 let selectedPerPage = DEFAULT_PER_PAGE;
 let currentPage = 1;
 let totalPages = 0;
@@ -238,6 +239,20 @@ function createCaptionSettingsPanel() {
 	allOption.textContent = 'All months';
 	monthYearSelect.appendChild(allOption);
 
+	// Search input (moved from header into the filters panel)
+	const searchLabel = document.createElement('label');
+	searchLabel.setAttribute('for', 'search-input');
+	searchLabel.textContent = 'Search';
+
+	const searchInput = document.createElement('input');
+	searchInput.type = 'search';
+	searchInput.id = 'search-input';
+	searchInput.placeholder = 'Search title, keywords or location';
+	searchInput.setAttribute('aria-label', 'Search gallery');
+
+	panel.appendChild(searchLabel);
+	panel.appendChild(searchInput);
+
 	const countryLabel = document.createElement('label');
 	countryLabel.setAttribute('for', 'country-filter-select');
 	countryLabel.textContent = 'Country / region';
@@ -269,6 +284,11 @@ function createCaptionSettingsPanel() {
 	resetButton.id = 'filters-reset-button';
 	resetButton.textContent = 'Reset filters';
 
+	const updateButton = document.createElement('button');
+	updateButton.type = 'button';
+	updateButton.id = 'filters-update-button';
+	updateButton.textContent = 'Update';
+
 	panel.appendChild(label);
 	panel.appendChild(monthYearLabel);
 	panel.appendChild(monthYearSelect);
@@ -276,6 +296,7 @@ function createCaptionSettingsPanel() {
 	panel.appendChild(countrySelect);
 	panel.appendChild(perPageLabel);
 	panel.appendChild(perPageSelect);
+	panel.appendChild(updateButton);
 	panel.appendChild(resetButton);
 	drawer.appendChild(panel);
 
@@ -491,13 +512,25 @@ function createCaptionSettingsPanel() {
 	loadMoreContainer.appendChild(loadMoreButton);
 	imageList.parentNode.insertBefore(loadMoreContainer, imageList.nextSibling);
 
+	// Allow pressing Enter inside the settings panel to apply filters (same as Update)
+	panel.addEventListener('keydown', (ev) => {
+		if (ev.key === 'Enter') {
+			ev.preventDefault();
+			// Trigger the Update button programmatically so behaviour is consistent
+			try {
+				updateButton.click();
+			} catch (_e) {}
+		}
+	});
 	return {
 		checkbox,
 		monthYearSelect,
 		countrySelect,
 		perPageSelect,
 		resetButton,
+		updateButton,
 		loadMoreButton,
+		searchInput,
 		openSettings,
 		closeSettings,
 		isSettingsOpen: () => {
@@ -525,6 +558,7 @@ function initSettingsPanel() {
 	const countrySelect = settings.countrySelect;
 	const perPageSelect = settings.perPageSelect;
 	const resetButton = settings.resetButton;
+	const updateButton = settings.updateButton;
 	const loadMoreButton = settings.loadMoreButton;
 	const closeSettings = settings.closeSettings;
 	const isSettingsOpen = settings.isSettingsOpen;
@@ -571,8 +605,6 @@ function initSettingsPanel() {
 			selectedMonthYear = monthYearSelect.value;
 			updateResetButtonVisibility();
 			refreshSettingsToggleLabel();
-			closeSettings();
-			run();
 		});
 	}
 
@@ -581,8 +613,6 @@ function initSettingsPanel() {
 			selectedCountry = countrySelect.value;
 			updateResetButtonVisibility();
 			refreshSettingsToggleLabel();
-			closeSettings();
-			run();
 		});
 	}
 
@@ -596,8 +626,6 @@ function initSettingsPanel() {
 
 			updateResetButtonVisibility();
 			refreshSettingsToggleLabel();
-			closeSettings();
-			run();
 		});
 	}
 
@@ -615,7 +643,7 @@ function initSettingsPanel() {
 	) {
 		updateResetButtonVisibility = () => {
 			const hasActiveFilter =
-				monthYearSelect.value !== '' || countrySelect.value !== '' || normalizePerPage(perPageSelect.value) !== DEFAULT_PER_PAGE;
+				monthYearSelect.value !== '' || countrySelect.value !== '' || selectedSearch !== '' || normalizePerPage(perPageSelect.value) !== DEFAULT_PER_PAGE;
 			resetButton.hidden = !hasActiveFilter;
 			refreshSettingsToggleLabel();
 		};
@@ -625,14 +653,37 @@ function initSettingsPanel() {
 		monthYearSelect.addEventListener('change', updateResetButtonVisibility);
 		countrySelect.addEventListener('change', updateResetButtonVisibility);
 		perPageSelect.addEventListener('change', updateResetButtonVisibility);
+		const panelSearchInput = settings.searchInput || document.getElementById('search-input');
+		if (panelSearchInput instanceof HTMLInputElement) {
+			// Keep the per-panel search state in `selectedSearch`
+			panelSearchInput.value = selectedSearch || '';
+			panelSearchInput.addEventListener('input', () => {
+				selectedSearch = String(panelSearchInput.value || '').trim();
+				updateResetButtonVisibility();
+			});
+			panelSearchInput.addEventListener('keydown', (ev) => {
+				if (ev.key === 'Escape') {
+					panelSearchInput.value = '';
+					selectedSearch = '';
+					updateResetButtonVisibility();
+				}
+			});
+		}
 
 		resetButton.addEventListener('click', () => {
 			selectedMonthYear = '';
 			selectedCountry = '';
+			selectedSearch = '';
 			selectedPerPage = DEFAULT_PER_PAGE;
 			monthYearSelect.value = '';
 			countrySelect.value = '';
 			perPageSelect.value = String(DEFAULT_PER_PAGE);
+
+			// Clear header search input if present
+			try {
+				const si = document.getElementById('search-input');
+				if (si instanceof HTMLInputElement) si.value = '';
+			} catch (_e) {}
 
 			try {
 				localStorage.setItem(PER_PAGE_STORAGE_KEY, String(DEFAULT_PER_PAGE));
@@ -640,9 +691,21 @@ function initSettingsPanel() {
 
 			updateResetButtonVisibility();
 			closeSettings();
+			// Re-run with cleared filters to refresh grid
+			currentPage = 1;
 			run();
 		});
 	}
+
+	// Wire update button to apply filters
+	if (typeof updateButton !== 'undefined' && updateButton instanceof HTMLButtonElement) {
+		updateButton.addEventListener('click', () => {
+			currentPage = 1;
+			closeSettings();
+			run();
+		});
+	}
+
 }
 
 function getLocationTerms(item) {
@@ -803,7 +866,7 @@ async function fetchCountryFilterOptions() {
 	let totalPages = 1;
 
 	while (page <= totalPages) {
-		const response = await fetchImageData('', '', page, 100);
+		const response = await fetchImageData('', '', page, 100, '');
 		totalPages = Math.max(response.totalPages, 1);
 
 		for (const item of response.data) {
@@ -833,7 +896,7 @@ function readPositiveIntHeader(headers, name, fallback = 0) {
 	return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
 }
 
-async function fetchImageData(monthYear = '', country = '', page = 1, perPage = 20) {
+async function fetchImageData(monthYear = '', country = '', page = 1, perPage = 20, search = '') {
 	let requestUrl;
 	const origin = window.location.origin;
 
@@ -861,6 +924,10 @@ async function fetchImageData(monthYear = '', country = '', page = 1, perPage = 
 	const request = new URL(requestUrl);
 	request.searchParams.set('page', String(page));
 	request.searchParams.set('per_page', String(perPage));
+
+	if (search && String(search).trim() !== '') {
+		request.searchParams.set('search', String(search).trim());
+	}
 
 	const response = await fetch(request.toString(), {
 		method: 'GET',
@@ -1084,7 +1151,7 @@ async function run() {
 
 		isLoadingPage = true;
 		updateLoadMoreButton();
-		const response = await fetchImageData(selectedMonthYear, selectedCountry, currentPage, selectedPerPage);
+		const response = await fetchImageData(selectedMonthYear, selectedCountry, currentPage, selectedPerPage, selectedSearch);
 		isLoadingPage = false;
 
 		currentPage = Math.max(response.page, 1);
@@ -1119,7 +1186,7 @@ async function loadMore() {
 		updateLoadMoreButton();
 
 		const nextPage = currentPage + 1;
-		const response = await fetchImageData(selectedMonthYear, selectedCountry, nextPage, selectedPerPage);
+		const response = await fetchImageData(selectedMonthYear, selectedCountry, nextPage, selectedPerPage, selectedSearch);
 
 		currentPage = Math.max(response.page, nextPage);
 
@@ -1520,6 +1587,23 @@ document.addEventListener('DOMContentLoaded', () => {
 	} catch (e) {
 		// Non-fatal
 	}
+
+	// Wire up header search input (integrated with filters; does not auto-run)
+	try {
+		const searchInput = document.getElementById('search-input');
+		if (searchInput instanceof HTMLInputElement) {
+			searchInput.value = selectedSearch || '';
+			searchInput.addEventListener('input', () => {
+				selectedSearch = String(searchInput.value || '').trim();
+			});
+			searchInput.addEventListener('keydown', (ev) => {
+				if (ev.key === 'Escape') {
+					searchInput.value = '';
+					selectedSearch = '';
+				}
+			});
+		}
+	} catch (e) {}
 });
 
 initSettingsPanel();

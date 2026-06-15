@@ -81,6 +81,7 @@ h1 {
 }
 
 #settings-panel select,
+#settings-panel input[type="search"],
 #settings-panel button,
 #load-more-button {
 	padding: 0.4rem 0.6rem;

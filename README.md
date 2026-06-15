@@ -165,7 +165,7 @@ Rules:
     - `country` (for example `/api?country=Scotland`)
     - both together (for example `/api?country=Scotland&month_year=2017-09`)
 
-    - `search` — full-word search against `title` (IPTC `object_name`) and `keywords` (for example `/api?search=matlock`).
+     - `search` — full-word search against `title` (IPTC `object_name`), `keywords`, and location fields (`country`, `state_province`, `sublocation`, `city`) (for example `/api?search=matlock`).
       - Behavior: matches whole words only (word-boundary anchored), case-insensitive and Unicode-aware. For example `search=matlock` will match `Matlock` and `Matlock Bath` but will NOT match partial substrings such as `mat`.
       - Can be combined with other filters and pagination (for example `/api?search=matlock&country=England&month_year=2019-06&page=1&per_page=40`).
 
@@ -208,6 +208,7 @@ Examples using the readable path form:
 - `/api/filter/location/austria/month_year/2024-03`
 - `/api/filter/month_year/2017-09/location/scotland`
 - `/api/filter/location/austria/month_year/2024-03/?page=2&per_page=40`
+ - `/api/filter/search/matlock`
  - `/api/filter/search/matlock`
 
 Canonical URLs and redirects:
