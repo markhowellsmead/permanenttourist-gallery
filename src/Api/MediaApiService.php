@@ -226,6 +226,38 @@ final class MediaApiService
 			}));
 		}
 
+			// Search filter: match full words in title (`object_name`) or `keywords`
+			$searchFilter = trim((string) ($queryParams['search'] ?? ''));
+			if ($searchFilter !== '') {
+				// Use Unicode-aware, case-insensitive full-word match
+				$escaped = preg_quote($searchFilter, '/');
+				$pattern = '/\b' . $escaped . '\b/iu';
+				$self = $this;
+				$data = array_values(array_filter($data, function ($item) use ($pattern, $self): bool {
+					if (!is_array($item)) {
+						return false;
+					}
+
+					// Title/object_name
+					$title = $self->extractIptcValue($item['iptc'] ?? [], 'object_name');
+					if (is_string($title) && preg_match($pattern, $title) === 1) {
+						return true;
+					}
+
+					// Keywords array
+					$keywords = $self->extractIptcArray($item['iptc'] ?? [], 'keywords');
+					if (is_array($keywords)) {
+						foreach ($keywords as $kw) {
+							if (is_string($kw) && preg_match($pattern, $kw) === 1) {
+								return true;
+							}
+						}
+					}
+
+					return false;
+				}));
+			}
+
 		$data = $this->sortByCaptureTimestampDesc($data);
 
 		$perPage = $this->parsePerPage($queryParams['per_page'] ?? null);
