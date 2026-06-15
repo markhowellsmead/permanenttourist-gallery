@@ -254,6 +254,15 @@ final class MediaApiService
 						}
 					}
 
+					// Location fields: country, state_province, sublocation, city
+					$locationKeys = ['country_primary_location_name', 'state_province', 'sublocation', 'city'];
+					foreach ($locationKeys as $lk) {
+						$val = $self->extractIptcValue($item['iptc'] ?? [], $lk);
+						if (is_string($val) && preg_match($pattern, $val) === 1) {
+							return true;
+						}
+					}
+
 					return false;
 				}));
 			}
